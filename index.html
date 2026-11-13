@@ -1,857 +1,1315 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DRACO // Central de Telemetria</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #04070d;
-  --panel: rgba(10, 18, 30, 0.75);
-  --panel2: rgba(15, 27, 44, 0.9);
-  --line: rgba(0, 240, 255, 0.22);
-  --line-bright: rgba(0, 240, 255, 0.65);
-  --text: #e6f4ff;
-  --muted: #6e8ca8;
-  --cyan: #00f0ff;
-  --purple: #b026ff;
-  --amber: #ffaa00;
-  --green: #00ff9d;
-  --glow-cyan: 0 0 18px rgba(0, 240, 255, 0.35);
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUD Central Cibernética | Minecraft Neural Data</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Rajdhani', 'sans-serif'],
+                        display: ['Orbitron', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#030712',
+                            card: '#0a0f1d',
+                            border: '#1e293b',
+                            cyan: '#06b6d4',
+                            cyanGlow: 'rgba(6, 182, 212, 0.4)',
+                            pink: '#ec4899',
+                            pinkGlow: 'rgba(236, 72, 153, 0.4)',
+                            neonGreen: '#10b981',
+                            neonYellow: '#facc15'
+                        }
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 20px rgba(6, 182, 212, 0.25)',
+                        'neon-pink': '0 0 20px rgba(236, 72, 153, 0.25)',
+                        'neon-green': '0 0 20px rgba(16, 185, 129, 0.25)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Scanlines & Hologram Effects */
+        body {
+            background-color: #030712;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
 
-* { box-sizing: border-box; }
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.3) 50%,
+                rgba(0, 0, 0, 0.3)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
 
-body {
-  margin: 0;
-  background-color: var(--bg);
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.14) 0%, transparent 55%),
-    radial-gradient(circle at 85% 90%, rgba(176, 38, 255, 0.1) 0%, transparent 45%),
-    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
-  animation: gridPan 25s linear infinite;
-  color: var(--text);
-  font-family: 'Rajdhani', system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.45;
-  overflow-x: hidden;
-}
+        .cyber-grid {
+            background-image: linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
 
-@keyframes gridPan {
-  0% { background-position: 0 0, 0 0, 0 0, 0 0; }
-  100% { background-position: 0 0, 0 0, 36px 36px, 36px 36px; }
-}
+        .cyber-border {
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
 
-/* Scanline sutil + feixe de varredura */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.12) 0px,
-    rgba(0, 0, 0, 0.12) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  pointer-events: none;
-  z-index: 999;
-}
+        .cyber-border-sm {
+            clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+        }
 
-.scan-beam {
-  position: fixed;
-  top: -10%;
-  left: 0;
-  width: 100%;
-  height: 120px;
-  background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.05), transparent);
-  pointer-events: none;
-  z-index: 998;
-  animation: scanDown 7s linear infinite;
-}
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
 
-@keyframes scanDown {
-  0% { top: -15%; }
-  100% { top: 110%; }
-}
+        .glitch-hover:hover {
+            animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both;
+        }
 
-/* Animações de entrada */
-@keyframes bootSlide {
-  from { opacity: 0; transform: translateY(18px) scale(0.98); filter: blur(4px); }
-  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-}
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #06b6d4;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #22d3ee;
+        }
 
-@keyframes rowFade {
-  from { opacity: 0; transform: translateX(-12px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes crestFloat {
-  0%, 100% { transform: translateY(0); box-shadow: 0 0 15px rgba(0, 240, 255, 0.35); }
-  50% { transform: translateY(-3px); box-shadow: 0 0 26px rgba(0, 240, 255, 0.65); }
-}
-
-@keyframes radarSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-header {
-  padding: 20px max(20px, calc((100% - 1220px)/2));
-  border-bottom: 1px solid var(--line);
-  background: rgba(4, 7, 13, 0.85);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
-}
-
-.header-inner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.crest {
-  width: 50px;
-  height: 50px;
-  border: 1px solid var(--cyan);
-  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(176, 38, 255, 0.15));
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  display: grid;
-  place-items: center;
-  color: var(--cyan);
-  font-size: 24px;
-  animation: crestFloat 3.5s ease-in-out infinite;
-}
-
-h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 26px;
-  font-weight: 900;
-  letter-spacing: 5px;
-  margin: 0;
-  background: linear-gradient(90deg, #ffffff, var(--cyan), #ffffff);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shineText 5s linear infinite;
-}
-
-@keyframes shineText {
-  to { background-position: 200% center; }
-}
-
-.sub {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--cyan);
-  font-size: 11px;
-  letter-spacing: 2px;
-  opacity: 0.85;
-  margin-top: 2px;
-}
-
-.sys-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--green);
-  border: 1px solid rgba(0, 255, 157, 0.35);
-  background: rgba(0, 255, 157, 0.08);
-  padding: 6px 14px;
-  border-radius: 4px;
-  letter-spacing: 1px;
-  box-shadow: 0 0 15px rgba(0, 255, 157, 0.12);
-}
-
-.pulse {
-  width: 8px;
-  height: 8px;
-  background: var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--green);
-  animation: blink 1.5s infinite ease-in-out;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(0.75); }
-}
-
-main {
-  max-width: 1220px;
-  margin: 28px auto;
-  padding: 0 20px 60px;
-}
-
-.top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 22px;
-  animation: bootSlide 0.5s ease-out both;
-}
-
-h2 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 15px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin: 0 0 4px;
-  color: #fff;
-}
-
-.hint {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.cursor {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--cyan);
-  vertical-align: middle;
-  margin-left: 4px;
-  animation: blink 1s step-end infinite;
-}
-
-select {
-  background: var(--panel2);
-  color: var(--cyan);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  border: 1px solid var(--line-bright);
-  padding: 11px 16px;
-  border-radius: 6px;
-  outline: none;
-  min-width: 260px;
-  cursor: pointer;
-  box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.08);
-  transition: all 0.25s ease;
-}
-
-select:hover, select:focus {
-  border-color: var(--cyan);
-  box-shadow: var(--glow-cyan);
-  transform: translateY(-1px);
-}
-
-select option {
-  background: #09111e;
-  color: var(--text);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.card {
-  background: var(--panel);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--line);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
-  padding: 20px;
-  min-width: 0;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
-  animation: bootSlide 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.grid .card:nth-child(1) { animation-delay: 0.06s; }
-.grid .card:nth-child(2) { animation-delay: 0.12s; }
-.grid .card:nth-child(3) { animation-delay: 0.18s; }
-.grid .card:nth-child(4) { animation-delay: 0.24s; }
-
-/* Reflexo holográfico ao passar o mouse */
-.card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.12), transparent);
-  transform: skewX(-25deg);
-  transition: left 0.65s ease;
-  pointer-events: none;
-}
-
-.card:hover::after {
-  left: 160%;
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 36px;
-  height: 2px;
-  background: var(--cyan);
-  box-shadow: var(--glow-cyan);
-  transition: width 0.3s ease;
-}
-
-.card:hover::before {
-  width: 90px;
-}
-
-.card:hover {
-  border-color: var(--line-bright);
-  box-shadow: 0 10px 30px rgba(0, 240, 255, 0.14);
-  transform: translateY(-4px);
-}
-
-.k-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
-}
-
-.k-value {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 28px;
-  font-weight: 700;
-  margin-top: 8px;
-  color: #fff;
-  text-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
-}
-
-.k-note {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--cyan);
-  margin-top: 6px;
-  opacity: 0.85;
-}
-
-.two {
-  display: grid;
-  grid-template-columns: 1.25fr .75fr;
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.two .card:nth-child(1) { animation-delay: 0.3s; }
-.two .card:nth-child(2) { animation-delay: 0.38s; }
-
-.chart {
-  height: 275px;
-  position: relative;
-  margin-top: 14px;
-}
-
-canvas {
-  width: 100%;
-  height: 100%;
-}
-
-.panel-title {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.12);
-  padding-bottom: 10px;
-}
-
-.tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  color: var(--cyan);
-  background: rgba(0, 240, 255, 0.1);
-  border: 1px solid rgba(0, 240, 255, 0.4);
-  padding: 3px 9px;
-  border-radius: 3px;
-}
-
-.table-card {
-  animation-delay: 0.45s;
-}
-
-.table-wrap {
-  overflow: auto;
-  margin-top: 12px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 620px;
-}
-
-.table th, .table td {
-  text-align: left;
-  padding: 12px 10px;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-  font-size: 14px;
-}
-
-.table th {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--cyan);
-  font-weight: 600;
-}
-
-.table tbody tr {
-  transition: background 0.2s ease, transform 0.2s ease;
-  animation: rowFade 0.4s ease-out both;
-}
-
-.table tbody tr:hover {
-  background: rgba(0, 240, 255, 0.08);
-  transform: translateX(4px);
-}
-
-.table tr:last-child td {
-  border: 0;
-}
-
-.rank {
-  font-family: 'Orbitron', sans-serif;
-  color: var(--cyan);
-  font-weight: 700;
-  width: 45px;
-}
-
-.rank-1 { color: var(--amber); text-shadow: 0 0 10px rgba(255, 170, 0, 0.7); }
-.rank-2 { color: #e2e8f0; text-shadow: 0 0 10px rgba(226, 232, 240, 0.6); }
-.rank-3 { color: #f97316; text-shadow: 0 0 10px rgba(249, 115, 22, 0.6); }
-
-.mono-val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-}
-
-.notice {
-  margin-top: 18px;
-  padding: 14px 16px;
-  border-left: 3px solid var(--purple);
-  background: linear-gradient(90deg, rgba(176, 38, 255, 0.14), rgba(10, 18, 30, 0.6));
-  border-top: 1px solid rgba(176, 38, 255, 0.25);
-  border-right: 1px solid rgba(176, 38, 255, 0.25);
-  border-bottom: 1px solid rgba(176, 38, 255, 0.25);
-  color: #dcd0ff;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  animation: bootSlide 0.6s 0.5s ease-out both;
-}
-
-footer {
-  text-align: center;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  padding: 28px;
-  border-top: 1px solid rgba(0, 240, 255, 0.1);
-}
-
-@media(max-width: 860px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
-  .two { grid-template-columns: 1fr; }
-}
-
-@media(max-width: 460px) {
-  .grid { grid-template-columns: 1fr; }
-  .k-value { font-size: 24px; }
-  main { padding: 0 12px 35px; }
-}
-</style>
+        canvas#matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.25;
+        }
+    </style>
 </head>
-<body>
-<div class="scan-beam"></div>
+<body class="relative min-h-screen font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
 
-<header>
-  <div class="header-inner">
-    <div class="brand">
-      <div class="crest">🐉</div>
-      <div>
-        <h1>DRACO</h1>
-        <div class="sub">SISTEMA CENTRAL DE TELEMETRIA // STATS</div>
-      </div>
-    </div>
-    <div class="sys-status">
-      <span class="pulse"></span>
-      <span>DATABANK ONLINE</span>
-    </div>
-  </div>
-</header>
+    <!-- Canvas para Partículas / Chuva Sci-Fi de Fundo -->
+    <canvas id="matrix-canvas"></canvas>
+    <!-- Efeito Scanlines Holográfico -->
+    <div class="absolute inset-0 scanlines z-10 fixed"></div>
 
-<main>
-  <div class="top">
-    <div>
-      <h2>Visão Geral da Rede</h2>
-      <div class="hint">> Métricas extraídas dos registros JSON do servidor Draco<span class="cursor"></span></div>
-    </div>
-    <div class="controls">
-      <select id="playerSelect">
-        <option value="all">[ TODOS OS JOGADORES ]</option>
-      </select>
-    </div>
-  </div>
+    <!-- Container Toast Notificações -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <section class="grid">
-    <div class="card">
-      <div class="k-label">Entidades Registradas</div>
-      <div class="k-value" id="players">0</div>
-      <div class="k-note">// Arquivos de perfil</div>
-    </div>
-    <div class="card">
-      <div class="k-label">Tempo de Operação</div>
-      <div class="k-value" id="time">0 h</div>
-      <div class="k-note">// Ticks convertidos</div>
-    </div>
-    <div class="card">
-      <div class="k-label">Baixas Registradas</div>
-      <div class="k-value" id="deaths">0</div>
-      <div class="k-note">// Total de mortes</div>
-    </div>
-    <div class="card">
-      <div class="k-label">Blocos Extraídos</div>
-      <div class="k-value" id="mined">0</div>
-      <div class="k-note">// Mineração acumulada</div>
-    </div>
-  </section>
-
-  <section class="two">
-    <div class="card">
-      <div class="panel-title">
-        <h2>Tempo de Jogo por Jogador</h2>
-        <span class="tag">TOP 10</span>
-      </div>
-      <div class="chart"><canvas id="playChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="panel-title">
-        <h2>Distribuição de Ações</h2>
-        <span class="tag">TELEMETRIA</span>
-      </div>
-      <div class="chart"><canvas id="activityChart"></canvas></div>
-    </div>
-  </section>
-
-  <section class="card table-card" style="margin-top:16px">
-    <div class="panel-title">
-      <h2>Matriz de Classificação</h2>
-      <span class="tag">ORDENADO POR TEMPO</span>
-    </div>
-    <div class="table-wrap">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>POS</th>
-            <th>Jogador / UUID</th>
-            <th>Tempo Jogado</th>
-            <th>Mortes</th>
-            <th>Mobs Abatidos</th>
-            <th>Blocos Minerados</th>
-          </tr>
-        </thead>
-        <tbody id="ranking"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <div class="notice">
-    [SYS_LOG] :: Identificadores vinculados via usercache.json. Perfis sem correspondência direta exibem fragmento hexadecimal do UUID.
-  </div>
-</main>
-
-<footer>DRACO NETWORK // PAINEL DE TELEMETRIA SINCRONIZADO COM STATS.ZIP & USERCACHE.JSON</footer>
-
-<script>
-const players = [{"uuid":"00000000-0000-0000-0009-01f38faa769e","name":".steve4stronauta","playTicks":32575,"deaths":5,"mobKills":0,"playerKills":0,"jumps":181,"walkCm":97888,"sprintCm":111509,"distanceFlownCm":9050,"mined":1,"crafted":0,"used":0,"pickedUp":5,"dropped":4,"killed":0,"killedBy":3},{"uuid":"27985ad9-8a5a-3acc-a08c-bd80adaf5fa6","name":"o_retrocido","playTicks":459,"deaths":0,"mobKills":0,"playerKills":0,"jumps":3,"walkCm":1290,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f64694e609","name":".Lorenzzfx","playTicks":43843,"deaths":2,"mobKills":0,"playerKills":0,"jumps":420,"walkCm":49653,"sprintCm":52144,"distanceFlownCm":95427,"mined":237,"crafted":53,"used":215,"pickedUp":403,"dropped":1,"killed":0,"killedBy":1},{"uuid":"fb070000-0000-0001-a17f-6cdef54bb877","name":"7","playTicks":8755,"deaths":0,"mobKills":0,"playerKills":0,"jumps":33,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-2b7a-dfe5057604cd","name":"2","playTicks":9318,"deaths":0,"mobKills":0,"playerKills":0,"jumps":28,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0000-0000-000000000001","name":"bot","playTicks":11721,"deaths":0,"mobKills":0,"playerKills":0,"jumps":9,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":17,"crafted":0,"used":0,"pickedUp":5,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f7d90d91d4","name":".Nightfaall3696","playTicks":2761,"deaths":1,"mobKills":0,"playerKills":0,"jumps":37,"walkCm":11235,"sprintCm":7834,"distanceFlownCm":2146,"mined":1,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":1},{"uuid":"a54fbc42-f6ae-3d1e-ae47-a07d24b00647","name":"steveastronuta","playTicks":2209,"deaths":0,"mobKills":0,"playerKills":0,"jumps":9,"walkCm":2348,"sprintCm":769,"distanceFlownCm":2413,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-075c-0fda97adc93c","name":"Cj","playTicks":328175,"deaths":0,"mobKills":0,"playerKills":0,"jumps":96,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":89,"crafted":0,"used":92,"pickedUp":36,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01ffb92cd0f2","name":".ALAN7SSA","playTicks":13833,"deaths":1,"mobKills":0,"playerKills":0,"jumps":138,"walkCm":35063,"sprintCm":43211,"distanceFlownCm":28772,"mined":0,"crafted":0,"used":14,"pickedUp":68,"dropped":0,"killed":0,"killedBy":0},{"uuid":"230afb84-faff-3db3-b139-8d8f95be5548","name":"o_retorcido","playTicks":50909,"deaths":0,"mobKills":4,"playerKills":0,"jumps":58,"walkCm":98125,"sprintCm":8152,"distanceFlownCm":98609,"mined":1,"crafted":0,"used":70,"pickedUp":2,"dropped":3,"killed":2,"killedBy":0},{"uuid":"ac2a035e-e48d-39d0-bf24-222bbe90d8c2","name":"Al3xOFC_","playTicks":5462,"deaths":0,"mobKills":0,"playerKills":0,"jumps":4,"walkCm":20942,"sprintCm":0,"distanceFlownCm":0,"mined":15,"crafted":0,"used":1,"pickedUp":16,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-8b94-b607ecc9aca1","name":"Miner","playTicks":31469,"deaths":2,"mobKills":0,"playerKills":0,"jumps":2,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":7,"crafted":0,"used":7,"pickedUp":11,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f887933038","name":".bigjonhbr5592","playTicks":14554,"deaths":1,"mobKills":7,"playerKills":0,"jumps":155,"walkCm":53703,"sprintCm":24217,"distanceFlownCm":23236,"mined":55,"crafted":61,"used":59,"pickedUp":71,"dropped":2,"killed":7,"killedBy":1},{"uuid":"fb070000-0000-0001-b3cd-cdf5f4f44682","name":"6","playTicks":8831,"deaths":0,"mobKills":0,"playerKills":0,"jumps":30,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"53909932-f794-33c0-9329-948045a4c1ce","name":"steve","playTicks":2277,"deaths":0,"mobKills":0,"playerKills":0,"jumps":6,"walkCm":1888,"sprintCm":3794,"distanceFlownCm":2044,"mined":0,"crafted":0,"used":1,"pickedUp":0,"dropped":1,"killed":0,"killedBy":0},{"uuid":"38b1bdba-14bc-3d40-985e-f26498f74463","name":"retorcido","playTicks":10993,"deaths":0,"mobKills":0,"playerKills":0,"jumps":6,"walkCm":62302,"sprintCm":0,"distanceFlownCm":0,"mined":216,"crafted":0,"used":215,"pickedUp":779,"dropped":1,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-97e1-15b900b05b14","name":"4","playTicks":8982,"deaths":0,"mobKills":0,"playerKills":0,"jumps":39,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01fb17651f51","name":".DANIZIN_FF1689","playTicks":105624,"deaths":3,"mobKills":6,"playerKills":0,"jumps":816,"walkCm":472356,"sprintCm":73887,"distanceFlownCm":78197,"mined":526,"crafted":1102,"used":920,"pickedUp":1745,"dropped":62,"killed":6,"killedBy":2},{"uuid":"8048391c-2888-302b-99c5-2efaee98b91c","name":"o-retrocido","playTicks":127,"deaths":0,"mobKills":0,"playerKills":0,"jumps":0,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f334718cd3","name":".Al3x8505","playTicks":83744,"deaths":0,"mobKills":18,"playerKills":0,"jumps":1110,"walkCm":255405,"sprintCm":212384,"distanceFlownCm":93888,"mined":1469,"crafted":640,"used":1556,"pickedUp":1797,"dropped":14,"killed":18,"killedBy":0},{"uuid":"fb070000-0000-0001-b3c5-63efc6562aa6","name":"3","playTicks":9150,"deaths":0,"mobKills":0,"playerKills":0,"jumps":26,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-b703-8eef116af06a","name":"1","playTicks":9374,"deaths":0,"mobKills":0,"playerKills":0,"jumps":25,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"9760317b-da1e-3752-8d16-73beff204bce","name":"simas","playTicks":6602,"deaths":0,"mobKills":0,"playerKills":0,"jumps":45,"walkCm":10645,"sprintCm":12573,"distanceFlownCm":13265,"mined":4,"crafted":0,"used":3,"pickedUp":17,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f9a44b4ae3","name":".Omlhr201","playTicks":66424,"deaths":3,"mobKills":12,"playerKills":0,"jumps":968,"walkCm":249578,"sprintCm":105047,"distanceFlownCm":47963,"mined":291,"crafted":237,"used":540,"pickedUp":842,"dropped":207,"killed":12,"killedBy":2},{"uuid":"00000000-0000-0000-0009-01fdeec5dc05","name":".nick92679","playTicks":95700,"deaths":0,"mobKills":1,"playerKills":0,"jumps":571,"walkCm":194723,"sprintCm":94588,"distanceFlownCm":79529,"mined":182,"crafted":53,"used":219,"pickedUp":539,"dropped":2,"killed":1,"killedBy":0},{"uuid":"699b40e1-1e30-3081-8932-92a2b31165a3","name":"wand_ofc","playTicks":1731,"deaths":0,"mobKills":0,"playerKills":0,"jumps":37,"walkCm":4661,"sprintCm":7043,"distanceFlownCm":11114,"mined":1,"crafted":0,"used":1,"pickedUp":1,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-9670-2dff448e4b72","name":"5","playTicks":8938,"deaths":0,"mobKills":0,"playerKills":0,"jumps":31,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"86553936-296a-3693-9096-6146a42a3260","name":"TuguinZx","playTicks":43290,"deaths":1,"mobKills":12,"playerKills":0,"jumps":828,"walkCm":64353,"sprintCm":105040,"distanceFlownCm":158311,"mined":169,"crafted":209,"used":239,"pickedUp":327,"dropped":34,"killed":12,"killedBy":1},{"uuid":"00000000-0000-0000-0009-01f4a9a884f5","name":".DUDA3019","playTicks":102280,"deaths":2,"mobKills":2,"playerKills":0,"jumps":373,"walkCm":376419,"sprintCm":12394,"distanceFlownCm":7753,"mined":30,"crafted":62,"used":54,"pickedUp":105,"dropped":5,"killed":2,"killedBy":2},{"uuid":"00000000-0000-0000-0009-01f542126d88","name":".igorpereiral","playTicks":13780,"deaths":0,"mobKills":2,"playerKills":0,"jumps":336,"walkCm":22739,"sprintCm":53926,"distanceFlownCm":81655,"mined":42,"crafted":31,"used":50,"pickedUp":67,"dropped":7,"killed":2,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01ffc5ed9b62","name":".NESCAUPLAYS7882","playTicks":55402,"deaths":3,"mobKills":0,"playerKills":0,"jumps":342,"walkCm":135896,"sprintCm":118846,"distanceFlownCm":16611,"mined":281,"crafted":119,"used":400,"pickedUp":397,"dropped":0,"killed":0,"killedBy":3},{"uuid":"5e884b9f-a90c-36a3-b7ae-5a3ff2daa1e2","name":"Paulophale","playTicks":2986,"deaths":0,"mobKills":0,"playerKills":0,"jumps":24,"walkCm":3697,"sprintCm":4324,"distanceFlownCm":5100,"mined":0,"crafted":0,"used":104,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f563c5de2f","name":".chawanp","playTicks":119051,"deaths":8,"mobKills":7,"playerKills":0,"jumps":1190,"walkCm":264219,"sprintCm":249940,"distanceFlownCm":174680,"mined":494,"crafted":1485,"used":726,"pickedUp":4832,"dropped":487,"killed":6,"killedBy":6},{"uuid":"f0739202-c548-3c71-b774-00ab67a627fd","name":"Al3xOFC","playTicks":191805,"deaths":3,"mobKills":7,"playerKills":0,"jumps":423,"walkCm":306756,"sprintCm":118102,"distanceFlownCm":23344,"mined":2670,"crafted":295,"used":3219,"pickedUp":3226,"dropped":10,"killed":7,"killedBy":3},{"uuid":"28cbb7d1-320d-3538-8861-e24e5f2b8c0f","name":"neymar12344566y6","playTicks":217208,"deaths":15,"mobKills":5,"playerKills":0,"jumps":2431,"walkCm":375576,"sprintCm":357987,"distanceFlownCm":386113,"mined":1628,"crafted":709,"used":2536,"pickedUp":5333,"dropped":179,"killed":5,"killedBy":9},{"uuid":"00284902-b05d-3c82-9633-10c2d454646b","name":"felipeoficial_br","playTicks":129231,"deaths":0,"mobKills":23,"playerKills":0,"jumps":1850,"walkCm":231524,"sprintCm":305535,"distanceFlownCm":281584,"mined":1125,"crafted":330,"used":1666,"pickedUp":1666,"dropped":481,"killed":21,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f3bbce64ec","name":".HeadyPlace1920","playTicks":427947,"deaths":1,"mobKills":75,"playerKills":0,"jumps":3769,"walkCm":729720,"sprintCm":943081,"distanceFlownCm":689712,"mined":1884,"crafted":1226,"used":3431,"pickedUp":2962,"dropped":213,"killed":72,"killedBy":1},{"uuid":"179158f2-d08c-3593-9583-405f051d4382","name":"Kiokinnn","playTicks":129188,"deaths":2,"mobKills":197,"playerKills":0,"jumps":2077,"walkCm":119761,"sprintCm":199466,"distanceFlownCm":598235,"mined":907,"crafted":572,"used":1477,"pickedUp":2461,"dropped":237,"killed":191,"killedBy":2},{"uuid":"0f50d757-82d0-3944-b3d7-fd7f747c313b","name":"7Benjamin","playTicks":214793,"deaths":2,"mobKills":118,"playerKills":3,"jumps":3176,"walkCm":570544,"sprintCm":557157,"distanceFlownCm":589063,"mined":1351,"crafted":488,"used":2039,"pickedUp":3985,"dropped":375,"killed":116,"killedBy":2},{"uuid":"00000000-0000-0000-0009-01fb2958238a","name":".LANLAN7607","playTicks":531905,"deaths":6,"mobKills":9,"playerKills":0,"jumps":4324,"walkCm":1687081,"sprintCm":1220719,"distanceFlownCm":492363,"mined":4544,"crafted":5611,"used":8508,"pickedUp":11851,"dropped":560,"killed":9,"killedBy":6},{"uuid":"00000000-0000-0000-0009-01f17fca85e4","name":".EnzoGabrielSL","playTicks":204541,"deaths":9,"mobKills":37,"playerKills":0,"jumps":3101,"walkCm":694200,"sprintCm":352790,"distanceFlownCm":391401,"mined":1402,"crafted":1572,"used":2955,"pickedUp":2945,"dropped":62,"killed":33,"killedBy":7},{"uuid":"2e3d5796-3ad9-326c-8ec8-a46cbae8879f","name":"Mbzin777","playTicks":352295,"deaths":3,"mobKills":82,"playerKills":0,"jumps":3728,"walkCm":882093,"sprintCm":1133318,"distanceFlownCm":462660,"mined":1752,"crafted":726,"used":2109,"pickedUp":3272,"dropped":376,"killed":82,"killedBy":2},{"uuid":"bfd634f4-ce82-329d-8688-e79544eeb61c","name":"gaatix_","playTicks":270990,"deaths":1,"mobKills":87,"playerKills":0,"jumps":2706,"walkCm":699282,"sprintCm":503237,"distanceFlownCm":483112,"mined":2179,"crafted":1898,"used":3522,"pickedUp":3354,"dropped":430,"killed":85,"killedBy":1},{"uuid":"6ee6a4c7-433e-388b-81cc-0239a3d032bb","name":"Zica8223","playTicks":867220,"deaths":32,"mobKills":190,"playerKills":1,"jumps":12556,"walkCm":2431375,"sprintCm":1694389,"distanceFlownCm":2767084,"mined":5356,"crafted":6499,"used":9722,"pickedUp":23711,"dropped":2440,"killed":164,"killedBy":30},{"uuid":"f6c95915-6c02-338e-b666-b7d90dfb473d","name":"KUPPERCUP","playTicks":445362,"deaths":0,"mobKills":240,"playerKills":0,"jumps":5223,"walkCm":720236,"sprintCm":938380,"distanceFlownCm":1027840,"mined":2743,"crafted":994,"used":4413,"pickedUp":4487,"dropped":365,"killed":240,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01ffde53d0f1","name":".Roboosso146","playTicks":1629411,"deaths":22,"mobKills":113,"playerKills":3,"jumps":10379,"walkCm":4581893,"sprintCm":1669793,"distanceFlownCm":1734588,"mined":2450,"crafted":1544,"used":3987,"pickedUp":4852,"dropped":362,"killed":42,"killedBy":16},{"uuid":"00000000-0000-0000-0009-01fd6a392940","name":".Yuuta279413","playTicks":4078461,"deaths":20,"mobKills":201,"playerKills":0,"jumps":25920,"walkCm":7346345,"sprintCm":4477847,"distanceFlownCm":4728916,"mined":29977,"crafted":23892,"used":44581,"pickedUp":61908,"dropped":2186,"killed":200,"killedBy":10},{"uuid":"00000000-0000-0000-0009-01f07b523540","name":".Legoshi4084","playTicks":3634716,"deaths":11,"mobKills":1300,"playerKills":0,"jumps":17159,"walkCm":2084829,"sprintCm":2898676,"distanceFlownCm":2876071,"mined":5955,"crafted":5599,"used":15234,"pickedUp":15096,"dropped":1746,"killed":1279,"killedBy":5},{"uuid":"00000000-0000-0000-0009-01f13e0e0206","name":".lionnn18","playTicks":6840001,"deaths":36,"mobKills":760,"playerKills":0,"jumps":28038,"walkCm":14081968,"sprintCm":13063857,"distanceFlownCm":2170376,"mined":64349,"crafted":68885,"used":97256,"pickedUp":116673,"dropped":9653,"killed":755,"killedBy":17},{"uuid":"9cd218a8-18b1-35dc-b017-785def1766c9","name":"steveastronauta","playTicks":5579406,"deaths":67,"mobKills":329,"playerKills":0,"jumps":15249,"walkCm":10201984,"sprintCm":4161199,"distanceFlownCm":12500655,"mined":19604,"crafted":9045,"used":39809,"pickedUp":58218,"dropped":2877,"killed":321,"killedBy":35},{"uuid":"7508aec8-939b-3a7a-8cd5-a1c913b5a882","name":"Lkokaki","playTicks":3395098,"deaths":19,"mobKills":7166,"playerKills":2,"jumps":52572,"walkCm":6738121,"sprintCm":6837006,"distanceFlownCm":9992848,"mined":19377,"crafted":47857,"used":36249,"pickedUp":38668,"dropped":11937,"killed":5031,"killedBy":14},{"uuid":"00000000-0000-0000-0009-01fdc5a0b3f2","name":".Driel8135","playTicks":5326452,"deaths":10,"mobKills":614,"playerKills":0,"jumps":71971,"walkCm":10227405,"sprintCm":13181721,"distanceFlownCm":15927789,"mined":27474,"crafted":57514,"used":53978,"pickedUp":50460,"dropped":4043,"killed":605,"killedBy":6}];
-
-const fmt = n => new Intl.NumberFormat('pt-BR').format(Math.round(n || 0));
-const hours = ticks => {
-  let h = ticks / 72000;
-  return h >= 1 ? (h.toFixed(1).replace('.', ',') + ' h') : (Math.round(ticks / 1200) + ' min');
-};
-const shortId = u => (players.find(p => p.uuid === u)?.name || (u.slice(0, 8) + '…'));
-const total = (arr, key) => arr.reduce((a, p) => a + (p[key] || 0), 0);
-
-const select = document.getElementById('playerSelect');
-players.sort((a, b) => b.playTicks - a.playTicks);
-players.forEach(p => {
-  let o = document.createElement('option');
-  o.value = p.uuid;
-  o.textContent = shortId(p.uuid);
-  select.appendChild(o);
-});
-
-// Contadores animados nos KPIs
-const kpiState = { players: 0, time: 0, deaths: 0, mined: 0 };
-const kpiRaf = {};
-
-function animateValue(id, target, formatter) {
-  if (kpiRaf[id]) cancelAnimationFrame(kpiRaf[id]);
-  const el = document.getElementById(id);
-  const start = kpiState[id] || 0;
-  const duration = 750;
-  const t0 = performance.now();
-
-  function step(now) {
-    const p = Math.min((now - t0) / duration, 1);
-    const ease = 1 - Math.pow(1 - p, 4);
-    const cur = start + (target - start) * ease;
-    kpiState[id] = cur;
-    el.textContent = formatter(cur);
-    if (p < 1) {
-      kpiRaf[id] = requestAnimationFrame(step);
-    } else {
-      kpiState[id] = target;
-      el.textContent = formatter(target);
-    }
-  }
-  kpiRaf[id] = requestAnimationFrame(step);
-}
-
-// Animações dos gráficos em Canvas
-let barRaf = null;
-function drawBarAnimated(canvasId, items) {
-  if (barRaf) cancelAnimationFrame(barRaf);
-  const c = document.getElementById(canvasId),
-        ctx = c.getContext('2d');
-  const duration = 850;
-  const t0 = performance.now();
-
-  function frame(now) {
-    const p = Math.min((now - t0) / duration, 1);
-    const ease = 1 - Math.pow(1 - p, 3);
-
-    const w = c.clientWidth,
-          h = c.clientHeight,
-          dpr = window.devicePixelRatio || 1;
-    c.width = w * dpr;
-    c.height = h * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
-
-    const left = items.some(x => x.label.length > 10) ? 105 : 78,
-          right = 14,
-          top = 10,
-          bottom = 8,
-          row = (h - top - bottom) / Math.max(items.length, 1),
-          max = Math.max(...items.map(x => x.value), 1);
-
-    ctx.font = '11px "JetBrains Mono", monospace';
-    items.forEach((it, i) => {
-      // Escalonamento sutil entre barras
-      const stagger = Math.max(0, Math.min(1, (p * 1.35) - (i * 0.045)));
-      const itemEase = 1 - Math.pow(1 - stagger, 3);
-
-      let y = top + i * row + row * 0.5;
-      
-      ctx.fillStyle = '#8aa8c7';
-      ctx.textAlign = 'right';
-      ctx.fillText(it.label.slice(0, 14), left - 10, y + 4);
-
-      ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
-      ctx.fillRect(left, y - 6, w - left - right, 12);
-
-      const fullBarW = (w - left - right) * it.value / max;
-      const barW = fullBarW * itemEase;
-
-      if (barW > 0.5) {
-        const grad = ctx.createLinearGradient(left, 0, left + fullBarW, 0);
-        grad.addColorStop(0, '#0077ff');
-        grad.addColorStop(1, '#00f0ff');
+    <!-- Interface Principal HUD -->
+    <div class="relative z-20 flex flex-col min-h-screen">
         
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 240, 255, 0.55)';
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = grad;
-        ctx.fillRect(left, y - 6, barW, 12);
+        <!-- Top HUD Header -->
+        <header class="border-b border-cyan-500/30 bg-cyber-bg/85 backdrop-blur-md sticky top-0 z-30 shadow-neon-cyan">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    
+                    <div class="flex items-center gap-4">
+                        <!-- Holographic Core Icon -->
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/25 to-blue-600/30 border border-cyan-400/50 flex items-center justify-center shadow-neon-cyan relative group">
+                            <div class="absolute inset-0 rounded-xl bg-cyan-400/10 animate-ping opacity-40 pointer-events-none"></div>
+                            <svg class="w-7 h-7 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <h1 class="text-lg sm:text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-pink-500 font-display">
+                                    HUD NEURAL // PLAYER_CACHE v4.2
+                                </h1>
+                                <span class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-neon-cyan">
+                                    [SYS_ONLINE]
+                                </span>
+                            </div>
+                            <p class="text-xs text-cyan-400/70 font-mono mt-0.5 tracking-wide">
+                                SEC_ID: 0x98FF2C • ANALISANDO 53 REGISTROS DO usercache.json &amp; data/*.dat
+                            </p>
+                        </div>
+                    </div>
 
-        // Ponta brilhante da barra
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(left + barW - 2, y - 6, 2, 12);
-        ctx.restore();
-      }
+                    <!-- Botões de Ação do Topo -->
+                    <div class="flex items-center gap-3 self-start md:self-auto">
+                        <button onclick="toggleAudioFx()" id="audio-btn" class="cyber-border-sm px-3 py-2 text-xs font-mono font-bold bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-cyan-500/40 transition-all flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                            <span>AUDIO HUD: ON</span>
+                        </button>
+                        <button onclick="exportFilteredJSON()" class="cyber-border-sm px-3.5 py-2 text-xs font-mono font-bold bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/50 shadow-neon-cyan transition-all flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>EXPORT_JSON()</span>
+                        </button>
+                    </div>
 
-      ctx.fillStyle = '#e6f4ff';
-      ctx.textAlign = 'left';
-      let txt = it.display || fmt(it.value);
-      ctx.fillText(txt, Math.min(left + barW + 8, w - 54), y + 4);
-    });
+                </div>
+            </div>
+            <!-- Linha de LED decorativa -->
+            <div class="h-0.5 w-full bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-80"></div>
+        </header>
 
-    if (p < 1) {
-      barRaf = requestAnimationFrame(frame);
-    }
-  }
-  barRaf = requestAnimationFrame(frame);
-}
+        <!-- Main Content Area -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 flex-1 w-full">
 
-let donutRaf = null;
-let radarAngle = 0;
-function drawDonutAnimated(canvasId, values) {
-  if (donutRaf) cancelAnimationFrame(donutRaf);
-  const c = document.getElementById(canvasId),
-        ctx = c.getContext('2d');
-  const duration = 900;
-  const t0 = performance.now();
+            <!-- 1. Painel de Indicadores Cibernéticos (KPIs) -->
+            <section aria-label="Estatísticas do Servidor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Total Card -->
+                <div class="cyber-border bg-cyber-card/90 border border-cyan-500/30 p-5 relative overflow-hidden group hover:border-cyan-400/80 transition-all shadow-lg">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-cyan-500/5 rounded-full blur-xl group-hover:bg-cyan-500/15 transition-all"></div>
+                    <div class="flex items-start justify-between relative z-10">
+                        <div>
+                            <span class="text-[11px] font-mono tracking-wider text-cyan-400/80 uppercase">TOTAL EM CACHE</span>
+                            <div class="text-3xl font-black text-white mt-1 font-display tracking-wide" id="kpi-total">0</div>
+                            <span class="text-[11px] text-slate-400 font-mono mt-1 block">registros no usercache</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                            <i data-lucide="cpu" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
 
-  function frame(now) {
-    const p = Math.min((now - t0) / duration, 1);
-    const ease = 1 - Math.pow(1 - p, 3);
-    radarAngle += 0.015;
+                <!-- Bedrock Card -->
+                <div class="cyber-border bg-cyber-card/90 border border-blue-500/30 p-5 relative overflow-hidden group hover:border-blue-400/80 transition-all shadow-lg">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/15 transition-all"></div>
+                    <div class="flex items-start justify-between relative z-10">
+                        <div>
+                            <span class="text-[11px] font-mono tracking-wider text-blue-400 uppercase">BEDROCK / GEYSER</span>
+                            <div class="text-3xl font-black text-white mt-1 font-display tracking-wide" id="kpi-bedrock">0</div>
+                            <span class="text-[11px] text-slate-400 font-mono mt-1 block">prefixo '.' / 0009-</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400">
+                            <i data-lucide="smartphone" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
 
-    const w = c.clientWidth,
-          h = c.clientHeight,
-          dpr = window.devicePixelRatio || 1;
-    c.width = w * dpr;
-    c.height = h * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
+                <!-- Java & Bots Card -->
+                <div class="cyber-border bg-cyber-card/90 border border-emerald-500/30 p-5 relative overflow-hidden group hover:border-emerald-400/80 transition-all shadow-lg">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/15 transition-all"></div>
+                    <div class="flex items-start justify-between relative z-10">
+                        <div>
+                            <span class="text-[11px] font-mono tracking-wider text-emerald-400 uppercase">JAVA &amp; BOTS / NPCS</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <div class="text-3xl font-black text-white font-display tracking-wide" id="kpi-java-bots">0</div>
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-mono mt-1 block" id="kpi-java-bots-sub">carregando...</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
 
-    const colors = ['#00f0ff', '#b026ff', '#00ff9d', '#ffaa00', '#ff3b6b'];
-    let sum = values.reduce((a, x) => a + x.value, 0) || 1,
-        cx = w * 0.34,
-        cy = h * 0.5,
-        r = Math.min(h * 0.35, w * 0.25),
-        a = -Math.PI / 2;
+                <!-- Backup Card -->
+                <div class="cyber-border bg-cyber-card/90 border border-amber-500/30 p-5 relative overflow-hidden group hover:border-amber-400/80 transition-all shadow-lg">
+                    <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/15 transition-all"></div>
+                    <div class="flex items-start justify-between relative z-10">
+                        <div>
+                            <span class="text-[11px] font-mono tracking-wider text-amber-400 uppercase">BACKUP .DAT_OLD</span>
+                            <div class="text-3xl font-black text-white mt-1 font-display tracking-wide" id="kpi-backup">0</div>
+                            <span class="text-[11px] text-slate-400 font-mono mt-1 block" id="kpi-dat-count">arquivos data/</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                            <i data-lucide="database" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
 
-    // Anel radar externo girando continuamente
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(radarAngle);
-    ctx.beginPath();
-    ctx.arc(0, 0, r + 16, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([5, 6]);
-    ctx.stroke();
-    ctx.restore();
+            </section>
 
-    // Arco animado
-    const totalSweep = Math.PI * 2 * ease;
-    let drawnSweep = 0;
+            <!-- 2. Painel de Busca, Filtros e Controles -->
+            <section aria-label="Controles de Busca" class="cyber-border bg-cyber-card/90 border border-cyan-500/30 p-4 sm:p-5 space-y-4 shadow-xl">
+                <div class="flex flex-col lg:flex-row gap-4 justify-between">
+                    
+                    <!-- Input de Busca Holográfico -->
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="QUERY_SEARCH // Digite Nick (ex: steveastronauta, .lionnn18) ou UUID..." 
+                            class="w-full pl-10 pr-10 py-3 bg-slate-950/90 border border-cyan-500/40 rounded-lg text-sm font-mono text-cyan-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400 transition-all shadow-inner"
+                        >
+                        <button id="clear-search" onclick="clearSearch()" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-cyan-400 hover:text-white cursor-pointer" title="Limpar busca">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                        </button>
+                    </div>
 
-    values.forEach((v, i) => {
-      const slice = (v.value / sum) * Math.PI * 2;
-      const visibleSlice = Math.max(0, Math.min(slice, totalSweep - drawnSweep));
-      if (visibleSlice > 0.001) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, a, a + visibleSlice);
-        ctx.strokeStyle = colors[i % colors.length];
-        ctx.shadowColor = colors[i % colors.length];
-        ctx.shadowBlur = 12;
-        ctx.lineWidth = 18;
-        ctx.stroke();
-        ctx.restore();
-      }
-      a += slice;
-      drawnSweep += slice;
-    });
+                    <!-- Ordenação e Layout -->
+                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-3">
+                        <div class="flex items-center gap-2 bg-slate-950/90 border border-cyan-500/40 rounded-lg px-3 py-2 w-full sm:w-auto">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+                            <label for="sort-select" class="text-xs font-mono text-cyan-400 whitespace-nowrap">ORDEM:</label>
+                            <select id="sort-select" class="bg-transparent text-xs font-mono text-slate-200 focus:outline-none cursor-pointer w-full">
+                                <option value="expires-desc" class="bg-slate-900">Expiração (Mais recente)</option>
+                                <option value="expires-asc" class="bg-slate-900">Expiração (Mais antiga)</option>
+                                <option value="name-asc" class="bg-slate-900">Nick (A - Z)</option>
+                                <option value="name-desc" class="bg-slate-900">Nick (Z - A)</option>
+                            </select>
+                        </div>
 
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px "Orbitron", sans-serif';
-    ctx.fillText(fmt(sum * ease), cx, cy + 5);
-    ctx.fillStyle = '#6e8ca8';
-    ctx.font = '9px "JetBrains Mono", monospace';
-    ctx.fillText('TOTAL', cx, cy + 18);
+                        <!-- Toggle Tabela / Cards -->
+                        <div class="hidden md:flex items-center bg-slate-950/90 border border-cyan-500/40 rounded-lg p-1" role="group">
+                            <button id="view-table-btn" onclick="setViewMode('table')" class="p-2 rounded bg-cyan-500/20 text-cyan-300 transition-colors cursor-pointer" title="Visualização Tabela">
+                                <i data-lucide="table" class="w-4 h-4"></i>
+                            </button>
+                            <button id="view-grid-btn" onclick="setViewMode('grid')" class="p-2 rounded text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer" title="Visualização Grade Cyber">
+                                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
 
-    ctx.textAlign = 'left';
-    values.forEach((v, i) => {
-      let y = cy - 42 + i * 26;
-      ctx.fillStyle = colors[i % colors.length];
-      ctx.fillRect(w * 0.65, y - 8, 8, 8);
-      ctx.fillStyle = '#8aa8c7';
-      ctx.font = '11px "JetBrains Mono", monospace';
-      ctx.fillText(v.label, w * 0.65 + 14, y);
-      ctx.fillStyle = '#e6f4ff';
-      ctx.font = 'bold 11px "JetBrains Mono", monospace';
-      ctx.fillText(fmt(v.value * ease), w * 0.65 + 14, y + 12);
-    });
+                </div>
 
-    // Continua girando suavemente o anel externo
-    donutRaf = requestAnimationFrame(frame);
-  }
-  donutRaf = requestAnimationFrame(frame);
-}
+                <!-- Abas de Filtro Cibernéticas -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-cyan-500/20">
+                    <div id="filter-tabs" class="flex flex-wrap items-center gap-2">
+                        <button data-filter="all" class="filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-bold transition-all cursor-pointer bg-cyan-500 text-slate-950 shadow-neon-cyan">
+                            ALL_RECORDS <span id="count-all" class="opacity-90">(53)</span>
+                        </button>
+                        <button data-filter="java" class="filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-medium transition-all cursor-pointer bg-slate-900 text-cyan-300 hover:bg-slate-800 border border-cyan-500/30">
+                            JAVA_EDITION <span id="count-java" class="text-cyan-500">(0)</span>
+                        </button>
+                        <button data-filter="bedrock" class="filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-medium transition-all cursor-pointer bg-slate-900 text-blue-300 hover:bg-slate-800 border border-blue-500/30">
+                            BEDROCK_GEYSER <span id="count-bedrock" class="text-blue-400">(0)</span>
+                        </button>
+                        <button data-filter="bot" class="filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-medium transition-all cursor-pointer bg-slate-900 text-purple-300 hover:bg-slate-800 border border-purple-500/30">
+                            BOTS_FAKES <span id="count-bot" class="text-purple-400">(0)</span>
+                        </button>
+                        <button data-filter="backup" class="filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-medium transition-all cursor-pointer bg-slate-900 text-amber-300 hover:bg-slate-800 border border-amber-500/30">
+                            WITH_BACKUP <span id="count-backup" class="text-amber-400">(0)</span>
+                        </button>
+                    </div>
 
-function render() {
-  const chosen = select.value,
-        selected = chosen === 'all' ? players : players.filter(p => p.uuid === chosen),
-        all = chosen === 'all';
+                    <div class="text-xs font-mono text-cyan-400/80">
+                        EXIBINDO: <span id="showing-count" class="font-bold text-white">53</span> / 53
+                    </div>
+                </div>
+            </section>
 
-  animateValue('players', all ? players.length : 1, fmt);
-  animateValue('time', total(selected, 'playTicks'), hours);
-  animateValue('deaths', total(selected, 'deaths'), fmt);
-  animateValue('mined', total(selected, 'mined'), fmt);
+            <!-- 3. Lista / Grade de Jogadores -->
+            <section aria-label="Lista de Jogadores" class="relative">
+                <!-- Estado Vazio -->
+                <div id="empty-state" class="hidden cyber-border bg-cyber-card/90 border border-cyan-500/30 p-12 text-center">
+                    <div class="w-14 h-14 rounded-xl bg-slate-900 border border-cyan-500/40 flex items-center justify-center mx-auto mb-4 text-cyan-400 shadow-neon-cyan">
+                        <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-lg font-bold font-display text-white">NENHUM REGISTRO ENCONTRADO</h3>
+                    <p class="text-sm font-mono text-cyan-400/70 mt-1 max-w-md mx-auto">
+                        Os parâmetros de query não correspondem a nenhum nó no cache neural.
+                    </p>
+                    <button onclick="resetFilters()" class="mt-4 cyber-border-sm px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-bold text-xs transition-colors cursor-pointer shadow-neon-cyan">
+                        RESET_FILTERS()
+                    </button>
+                </div>
 
-  let top = (all ? players : selected).slice(0, 10);
-  drawBarAnimated('playChart', top.map(x => ({ label: shortId(x.uuid), value: x.playTicks, display: hours(x.playTicks) })));
+                <!-- Visualização em Tabela Cyber -->
+                <div id="table-container" class="cyber-border bg-cyber-card/90 border border-cyan-500/30 overflow-hidden shadow-2xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-cyan-500/30 bg-slate-950/80 text-[11px] font-mono uppercase tracking-wider text-cyan-400">
+                                    <th class="py-3.5 px-4">JOGADOR // NICK</th>
+                                    <th class="py-3.5 px-4">PLATAFORMA</th>
+                                    <th class="py-3.5 px-4">UUID COMPLETO</th>
+                                    <th class="py-3.5 px-4">EXPIRAÇÃO (CACHE)</th>
+                                    <th class="py-3.5 px-4">STATUS ARQUIVOS DATA/</th>
+                                    <th class="py-3.5 px-4 text-right">AÇÕES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="players-table-body" class="divide-y divide-cyan-500/10 text-sm font-sans">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-  let acts = [
-    ['Minerados', 'mined'],
-    ['Criados', 'crafted'],
-    ['Usados', 'used'],
-    ['Coletados', 'pickedUp'],
-    ['Descartados', 'dropped']
-  ].map(([label, key]) => ({ label, value: total(selected, key) })).filter(x => x.value > 0);
-  
-  drawDonutAnimated('activityChart', acts.length ? acts : [{ label: 'Sem dados', value: 1 }]);
+                <!-- Visualização em Grade Cyber (Cards) -->
+                <div id="grid-container" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Preenchido via JS -->
+                </div>
+            </section>
 
-  const tbody = document.getElementById('ranking');
-  tbody.innerHTML = '';
-  (all ? players : selected).forEach((x, i) => {
-    let tr = document.createElement('tr');
-    tr.style.animationDelay = `${Math.min(i * 0.03, 0.8)}s`;
-    const pos = String(i + 1).padStart(2, '0');
-    const cols = [pos, shortId(x.uuid), hours(x.playTicks), fmt(x.deaths), fmt(x.mobKills), fmt(x.mined)];
-    
-    cols.forEach((v, j) => {
-      let td = document.createElement('td');
-      td.textContent = v;
-      if (j === 0) {
-        td.className = 'rank' + (i < 3 ? ` rank-${i + 1}` : '');
-      } else if (j >= 2) {
-        td.className = 'mono-val';
-      } else {
-        td.style.fontWeight = '600';
-      }
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-}
+        </main>
 
-select.addEventListener('change', render);
-window.addEventListener('resize', render);
-render();
-</script>
+        <!-- Footer Cyber -->
+        <footer class="border-t border-cyan-500/30 bg-cyber-bg/90 py-4 px-4 sm:px-6 lg:px-8 text-center text-xs font-mono text-cyan-500/60 mt-12">
+            <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+                <span>[SYS_STATUS]: NEURAL CACHE SYNCED &amp; SECURE</span>
+                <span>MINECRAFT SERVER DATA INSPECTOR // CYBER_EDITION</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- 4. Modal de Detalhes Estilo Terminal Sci-Fi -->
+    <div id="player-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true">
+        <div class="cyber-border bg-cyber-card border-2 border-cyan-400/70 max-w-2xl w-full overflow-hidden shadow-2xl shadow-neon-cyan transform transition-all" onclick="event.stopPropagation()">
+            
+            <!-- Modal Header Terminal -->
+            <div class="px-6 py-4 bg-slate-950 border-b border-cyan-500/40 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="modal-avatar-wrapper" class="w-14 h-14 rounded-lg bg-slate-900 border border-cyan-400/50 overflow-hidden shrink-0 flex items-center justify-center shadow-neon-cyan">
+                        <!-- Avatar -->
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h2 id="modal-player-name" class="text-xl font-black font-display text-white tracking-wide">NOME</h2>
+                            <span id="modal-type-badge"></span>
+                        </div>
+                        <p id="modal-account-desc" class="text-xs font-mono text-cyan-400/70 mt-0.5">Descrição do tipo de conta</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="p-2 rounded bg-slate-900 hover:bg-cyan-500/20 text-cyan-400 hover:text-white transition-colors cursor-pointer border border-cyan-500/30" aria-label="Fechar">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Terminal -->
+            <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto font-mono">
+                
+                <!-- UUID Box -->
+                <div class="bg-slate-950/90 border border-cyan-500/40 rounded-lg p-4">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-xs uppercase tracking-wider text-cyan-400">UUID NEURAL COMPLETO</span>
+                        <button id="modal-copy-uuid-btn" class="cyber-border-sm inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition-colors cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>COPY_UUID</span>
+                        </button>
+                    </div>
+                    <code id="modal-uuid" class="text-xs sm:text-sm text-cyan-200 break-all select-all"></code>
+                </div>
+
+                <!-- Detalhes de Data -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-950/80 border border-cyan-500/30 rounded-lg p-3.5">
+                        <span class="text-[11px] uppercase tracking-wider text-cyan-400 block mb-1">EXPIRAÇÃO (expiresOn)</span>
+                        <p id="modal-expires-formatted" class="text-sm font-bold text-white"></p>
+                        <p id="modal-expires-raw" class="text-xs text-slate-500 mt-0.5"></p>
+                    </div>
+                    <div class="bg-slate-950/80 border border-cyan-500/30 rounded-lg p-3.5">
+                        <span class="text-[11px] uppercase tracking-wider text-cyan-400 block mb-1">SISTEMA DETECTADO</span>
+                        <p id="modal-detected-type" class="text-sm font-bold text-white"></p>
+                        <p id="modal-detected-rule" class="text-xs text-slate-400 mt-0.5"></p>
+                    </div>
+                </div>
+
+                <!-- Arquivos data/ -->
+                <div class="space-y-2">
+                    <h3 class="text-xs uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                        <i data-lucide="folder-open" class="w-4 h-4 text-amber-400"></i>
+                        <span>MAPA DE ARQUIVOS (pasta <code class="text-slate-300">data/</code>)</span>
+                    </h3>
+                    <div class="space-y-2" id="modal-files-list">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+
+                <!-- JSON Bruto -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                            <i data-lucide="file-json" class="w-4 h-4 text-cyan-400"></i>
+                            <span>JSON NODE DATA</span>
+                        </h3>
+                        <button id="modal-copy-json-btn" class="cyber-border-sm inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 transition-colors cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>COPY_JSON</span>
+                        </button>
+                    </div>
+                    <pre id="modal-raw-json" class="bg-slate-950 border border-cyan-500/30 rounded-lg p-4 text-xs text-cyan-300 overflow-x-auto leading-relaxed shadow-inner"></pre>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-950 border-t border-cyan-500/40 flex justify-end">
+                <button onclick="closeModal()" class="cyber-border-sm px-5 py-2 bg-slate-900 hover:bg-cyan-500/20 text-cyan-300 font-mono font-bold text-xs border border-cyan-500/40 transition-colors cursor-pointer">
+                    CLOSE_TERMINAL()
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // 1. DADOS EXATOS DO SERVIDOR (usercache.json + data/)
+        // ============================================================================
+        const USER_CACHE_DATA = [
+            {"uuid":"9cd218a8-18b1-35dc-b017-785def1766c9","name":"steveastronauta","expiresOn":"2026-12-13 12:55:08 -0300"},
+            {"uuid":"7508aec8-939b-3a7a-8cd5-a1c913b5a882","name":"Lkokaki","expiresOn":"2026-12-13 12:39:01 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f13e0e0206","name":".lionnn18","expiresOn":"2026-12-12 22:37:32 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01fd6a392940","name":".Yuuta279413","expiresOn":"2026-12-12 20:41:04 -0300"},
+            {"uuid":"6ee6a4c7-433e-388b-81cc-0239a3d032bb","name":"Zica8223","expiresOn":"2026-12-12 16:09:49 -0300"},
+            {"uuid":"f6c95915-6c02-338e-b666-b7d90dfb473d","name":"KUPPERCUP","expiresOn":"2026-12-12 15:42:46 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f563c5de2f","name":".chawanp","expiresOn":"2026-12-10 19:11:31 -0300"},
+            {"uuid":"5e884b9f-a90c-36a3-b7ae-5a3ff2daa1e2","name":"Paulophale","expiresOn":"2026-12-09 23:19:16 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01fdc5a0b3f2","name":".Driel8135","expiresOn":"2026-12-06 18:20:00 -0300"},
+            {"uuid":"179158f2-d08c-3593-9583-405f051d4382","name":"Kiokinnn","expiresOn":"2026-12-03 20:42:37 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f64694e609","name":".Lorenzzfx","expiresOn":"2026-12-02 21:48:04 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f38faa769e","name":".steve4stronauta","expiresOn":"2026-12-02 15:28:49 -0300"},
+            {"uuid":"2e3d5796-3ad9-326c-8ec8-a46cbae8879f","name":"Mbzin777","expiresOn":"2026-11-30 13:57:05 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f07b523540","name":".Legoshi4084","expiresOn":"2026-11-30 01:17:26 -0300"},
+            {"uuid":"fb070000-0000-0001-a17f-6cdef54bb877","name":"7","expiresOn":"2026-11-27 20:44:37 -0300"},
+            {"uuid":"fb070000-0000-0001-b3cd-cdf5f4f44682","name":"6","expiresOn":"2026-11-27 20:44:33 -0300"},
+            {"uuid":"fb070000-0000-0001-9670-2dff448e4b72","name":"5","expiresOn":"2026-11-27 20:44:27 -0300"},
+            {"uuid":"fb070000-0000-0001-97e1-15b900b05b14","name":"4","expiresOn":"2026-11-27 20:44:24 -0300"},
+            {"uuid":"fb070000-0000-0001-b3c5-63efc6562aa6","name":"3","expiresOn":"2026-11-27 20:44:16 -0300"},
+            {"uuid":"fb070000-0000-0001-2b7a-dfe5057604cd","name":"2","expiresOn":"2026-11-27 20:44:08 -0300"},
+            {"uuid":"fb070000-0000-0001-b703-8eef116af06a","name":"1","expiresOn":"2026-11-27 20:44:05 -0300"},
+            {"uuid":"fb070000-0000-0001-075c-0fda97adc93c","name":"Cj","expiresOn":"2026-11-27 19:48:38 -0300"},
+            {"uuid":"fb070000-0000-0001-8b94-b607ecc9aca1","name":"Miner","expiresOn":"2026-11-26 21:48:57 -0300"},
+            {"uuid":"38b1bdba-14bc-3d40-985e-f26498f74463","name":"retorcido","expiresOn":"2026-11-26 20:37:17 -0300"},
+            {"uuid":"fb070000-0000-0000-0000-000000000001","name":"bot","expiresOn":"2026-11-26 21:34:11 -0300"},
+            {"uuid":"8048391c-2888-302b-99c5-2efaee98b91c","name":"o-retrocido","expiresOn":"2026-11-26 20:36:03 -0300"},
+            {"uuid":"27985ad9-8a5a-3acc-a08c-bd80adaf5fa6","name":"o_retrocido","expiresOn":"2026-11-26 20:34:58 -0300"},
+            {"uuid":"230afb84-faff-3db3-b139-8d8f95be5548","name":"o_retorcido","expiresOn":"2026-11-26 19:22:33 -0300"},
+            {"uuid":"28cbb7d1-320d-3538-8861-e24e5f2b8c0f","name":"neymar12344566y6","expiresOn":"2026-11-25 22:17:41 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01ffb92cd0f2","name":".ALAN7SSA","expiresOn":"2026-11-25 21:40:46 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01fb2958238a","name":".LANLAN7607","expiresOn":"2026-11-25 15:24:06 -0300"},
+            {"uuid":"9760317b-da1e-3752-8d16-73beff204bce","name":"simas","expiresOn":"2026-11-21 20:04:44 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01ffde53d0f1","name":".Roboosso146","expiresOn":"2026-11-21 19:23:57 -0300"},
+            {"uuid":"a54fbc42-f6ae-3d1e-ae47-a07d24b00647","name":"steveastronuta","expiresOn":"2026-11-19 19:06:53 -0300"},
+            {"uuid":"53909932-f794-33c0-9329-948045a4c1ce","name":"steve","expiresOn":"2026-11-19 19:01:36 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f4a9a884f5","name":".DUDA3019","expiresOn":"2026-11-14 20:37:53 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f3bbce64ec","name":".HeadyPlace1920","expiresOn":"2026-11-14 20:24:50 -0300"},
+            {"uuid":"0f50d757-82d0-3944-b3d7-fd7f747c313b","name":"7Benjamin","expiresOn":"2026-11-14 20:00:44 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01fdeec5dc05","name":".nick92679","expiresOn":"2026-11-14 18:37:43 -0300"},
+            {"uuid":"00284902-b05d-3c82-9633-10c2d454646b","name":"felipeoficial_br","expiresOn":"2026-11-14 18:26:20 -0300"},
+            {"uuid":"bfd634f4-ce82-329d-8688-e79544eeb61c","name":"gaatix_","expiresOn":"2026-11-09 20:42:11 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f334718cd3","name":".Al3x8505","expiresOn":"2026-11-08 19:45:38 -0300"},
+            {"uuid":"699b40e1-1e30-3081-8932-92a2b31165a3","name":"wand_ofc","expiresOn":"2026-11-04 20:02:58 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01fb17651f51","name":".DANIZIN_FF1689","expiresOn":"2026-11-04 19:28:43 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f7d90d91d4","name":".Nightfaall3696","expiresOn":"2026-11-04 19:07:50 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f542126d88","name":".igorpereiral","expiresOn":"2026-11-04 18:57:47 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f887933038","name":".bigjonhbr5592","expiresOn":"2026-11-04 18:56:46 -0300"},
+            {"uuid":"86553936-296a-3693-9096-6146a42a3260","name":"TuguinZx","expiresOn":"2026-11-03 22:02:28 -0300"},
+            {"uuid":"f0739202-c548-3c71-b774-00ab67a627fd","name":"Al3xOFC","expiresOn":"2026-11-03 21:26:19 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f17fca85e4","name":".EnzoGabrielSL","expiresOn":"2026-11-02 22:54:26 -0300"},
+            {"uuid":"ac2a035e-e48d-39d0-bf24-222bbe90d8c2","name":"Al3xOFC_","expiresOn":"2026-10-25 21:18:41 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01ffc5ed9b62","name":".NESCAUPLAYS7882","expiresOn":"2026-10-19 22:21:44 -0300"},
+            {"uuid":"00000000-0000-0000-0009-01f9a44b4ae3","name":".Omlhr201","expiresOn":"2026-10-19 19:40:18 -0300"}
+        ];
+
+        const DATA_FOLDER_FILES = new Set([
+            "data/00000000-0000-0000-0009-01f887933038.dat_old",
+            "data/bfd634f4-ce82-329d-8688-e79544eeb61c.dat",
+            "data/9760317b-da1e-3752-8d16-73beff204bce.dat_old",
+            "data/230afb84-faff-3db3-b139-8d8f95be5548.dat",
+            "data/00000000-0000-0000-0009-01f9a44b4ae3.dat",
+            "data/0f50d757-82d0-3944-b3d7-fd7f747c313b.dat",
+            "data/00000000-0000-0000-0009-01fd6a392940.dat",
+            "data/00000000-0000-0000-0009-01ffde53d0f1.dat",
+            "data/699b40e1-1e30-3081-8932-92a2b31165a3.dat",
+            "data/fb070000-0000-0001-9670-2dff448e4b72.dat_old",
+            "data/00000000-0000-0000-0009-01f334718cd3.dat_old",
+            "data/00000000-0000-0000-0009-01fdc5a0b3f2.dat",
+            "data/00000000-0000-0000-0009-01ffc5ed9b62.dat",
+            "data/28cbb7d1-320d-3538-8861-e24e5f2b8c0f.dat_old",
+            "data/179158f2-d08c-3593-9583-405f051d4382.dat",
+            "data/179158f2-d08c-3593-9583-405f051d4382.dat_old",
+            "data/00284902-b05d-3c82-9633-10c2d454646b.dat_old",
+            "data/a54fbc42-f6ae-3d1e-ae47-a07d24b00647.dat",
+            "data/fb070000-0000-0001-2b7a-dfe5057604cd.dat",
+            "data/fb070000-0000-0001-8b94-b607ecc9aca1.dat_old",
+            "data/00000000-0000-0000-0009-01f3bbce64ec.dat",
+            "data/00000000-0000-0000-0009-01fdeec5dc05.dat_old",
+            "data/ac2a035e-e48d-39d0-bf24-222bbe90d8c2.dat",
+            "data/fb070000-0000-0001-b3c5-63efc6562aa6.dat_old",
+            "data/00000000-0000-0000-0009-01f4a9a884f5.dat_old",
+            "data/00000000-0000-0000-0009-01ffb92cd0f2.dat",
+            "data/fb070000-0000-0001-9670-2dff448e4b72.dat",
+            "data/bfd634f4-ce82-329d-8688-e79544eeb61c.dat_old",
+            "data/8048391c-2888-302b-99c5-2efaee98b91c.dat",
+            "data/00000000-0000-0000-0009-01fb2958238a.dat",
+            "data/2e3d5796-3ad9-326c-8ec8-a46cbae8879f.dat_old",
+            "data/27985ad9-8a5a-3acc-a08c-bd80adaf5fa6.dat",
+            "data/00000000-0000-0000-0009-01f64694e609.dat",
+            "data/00000000-0000-0000-0009-01fd6a392940.dat_old",
+            "data/fb070000-0000-0001-b703-8eef116af06a.dat",
+            "data/fb070000-0000-0001-a17f-6cdef54bb877.dat_old",
+            "data/00000000-0000-0000-0009-01f887933038.dat",
+            "data/00000000-0000-0000-0009-01f563c5de2f.dat",
+            "data/53909932-f794-33c0-9329-948045a4c1ce.dat",
+            "data/2e3d5796-3ad9-326c-8ec8-a46cbae8879f.dat",
+            "data/86553936-296a-3693-9096-6146a42a3260.dat",
+            "data/00000000-0000-0000-0009-01f3bbce64ec.dat_old",
+            "data/00000000-0000-0000-0009-01f38faa769e.dat",
+            "data/00000000-0000-0000-0009-01f542126d88.dat_old",
+            "data/00000000-0000-0000-0009-01ffc5ed9b62.dat_old",
+            "data/00000000-0000-0000-0009-01ffb92cd0f2.dat_old",
+            "data/fb070000-0000-0001-97e1-15b900b05b14.dat",
+            "data/fb070000-0000-0001-a17f-6cdef54bb877.dat",
+            "data/f0739202-c548-3c71-b774-00ab67a627fd.dat",
+            "data/00000000-0000-0000-0009-01f9a44b4ae3.dat_old",
+            "data/86553936-296a-3693-9096-6146a42a3260.dat_old",
+            "data/53909932-f794-33c0-9329-948045a4c1ce.dat_old",
+            "data/00000000-0000-0000-0009-01fb17651f51.dat",
+            "data/fb070000-0000-0001-b3c5-63efc6562aa6.dat",
+            "data/00000000-0000-0000-0009-01f17fca85e4.dat",
+            "data/00000000-0000-0000-0009-01fb2958238a.dat_old",
+            "data/fb070000-0000-0001-075c-0fda97adc93c.dat",
+            "data/38b1bdba-14bc-3d40-985e-f26498f74463.dat",
+            "data/230afb84-faff-3db3-b139-8d8f95be5548.dat_old",
+            "data/00000000-0000-0000-0009-01fdeec5dc05.dat",
+            "data/38b1bdba-14bc-3d40-985e-f26498f74463.dat_old",
+            "data/a54fbc42-f6ae-3d1e-ae47-a07d24b00647.dat_old",
+            "data/f0739202-c548-3c71-b774-00ab67a627fd.dat_old",
+            "data/7508aec8-939b-3a7a-8cd5-a1c913b5a882.dat",
+            "data/00284902-b05d-3c82-9633-10c2d454646b.dat",
+            "data/0f50d757-82d0-3944-b3d7-fd7f747c313b.dat_old",
+            "data/00000000-0000-0000-0009-01f38faa769e.dat_old",
+            "data/28cbb7d1-320d-3538-8861-e24e5f2b8c0f.dat",
+            "data/fb070000-0000-0001-8b94-b607ecc9aca1.dat",
+            "data/9760317b-da1e-3752-8d16-73beff204bce.dat",
+            "data/fb070000-0000-0001-97e1-15b900b05b14.dat_old",
+            "data/fb070000-0000-0001-b3cd-cdf5f4f44682.dat",
+            "data/00000000-0000-0000-0009-01f334718cd3.dat",
+            "data/00000000-0000-0000-0009-01f64694e609.dat_old",
+            "data/fb070000-0000-0000-0000-000000000001.dat_old",
+            "data/fb070000-0000-0001-b703-8eef116af06a.dat_old",
+            "data/00000000-0000-0000-0009-01f7d90d91d4.dat",
+            "data/ac2a035e-e48d-39d0-bf24-222bbe90d8c2.dat_old",
+            "data/00000000-0000-0000-0009-01fb17651f51.dat_old",
+            "data/00000000-0000-0000-0009-01f4a9a884f5.dat",
+            "data/fb070000-0000-0001-b3cd-cdf5f4f44682.dat_old",
+            "data/00000000-0000-0000-0009-01f542126d88.dat",
+            "data/fb070000-0000-0000-0000-000000000001.dat",
+            "data/fb070000-0000-0001-075c-0fda97adc93c.dat_old",
+            "data/00000000-0000-0000-0009-01f07b523540.dat_old",
+            "data/fb070000-0000-0001-2b7a-dfe5057604cd.dat_old",
+            "data/5e884b9f-a90c-36a3-b7ae-5a3ff2daa1e2.dat",
+            "data/00000000-0000-0000-0009-01f17fca85e4.dat_old",
+            "data/00000000-0000-0000-0009-01ffde53d0f1.dat_old",
+            "data/00000000-0000-0000-0009-01f563c5de2f.dat_old",
+            "data/5e884b9f-a90c-36a3-b7ae-5a3ff2daa1e2.dat_old",
+            "data/00000000-0000-0000-0009-01fdc5a0b3f2.dat_old",
+            "data/f6c95915-6c02-338e-b666-b7d90dfb473d.dat_old",
+            "data/f6c95915-6c02-338e-b666-b7d90dfb473d.dat",
+            "data/00000000-0000-0000-0009-01f13e0e0206.dat_old",
+            "data/6ee6a4c7-433e-388b-81cc-0239a3d032bb.dat",
+            "data/6ee6a4c7-433e-388b-81cc-0239a3d032bb.dat_old",
+            "data/00000000-0000-0000-0009-01f13e0e0206.dat",
+            "data/00000000-0000-0000-0009-01f07b523540.dat",
+            "data/9cd218a8-18b1-35dc-b017-785def1766c9.dat_old",
+            "data/7508aec8-939b-3a7a-8cd5-a1c913b5a882.dat_old",
+            "data/9cd218a8-18b1-35dc-b017-785def1766c9.dat"
+        ]);
+
+        // ============================================================================
+        // 2. AUDIO FX (Web Audio API Synthesizer futurista)
+        // ============================================================================
+        let audioEnabled = true;
+        let audioCtx = null;
+
+        function playSciFiSound(type = 'click') {
+            if (!audioEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'modal') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                }
+            } catch(e) {}
+        }
+
+        function toggleAudioFx() {
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById('audio-btn');
+            btn.innerHTML = audioEnabled 
+                ? `<i data-lucide="volume-2" class="w-4 h-4"></i><span>AUDIO HUD: ON</span>`
+                : `<i data-lucide="volume-x" class="w-4 h-4"></i><span>AUDIO HUD: OFF</span>`;
+            lucide.createIcons();
+            playSciFiSound('click');
+        }
+
+        // ============================================================================
+        // 3. CANVAS MATRIX / PARTÍCULAS SCI-FI DE FUNDO
+        // ============================================================================
+        function initMatrixCanvas() {
+            const canvas = document.getElementById('matrix-canvas');
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ<>/\\{}[]*#$@§';
+            const fontSize = 14;
+            const columns = Math.floor(canvas.width / fontSize);
+            const drops = Array(columns).fill(1);
+
+            function draw() {
+                ctx.fillStyle = 'rgba(3, 7, 18, 0.12)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
+                ctx.font = `${fontSize}px 'JetBrains Mono', monospace`;
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+            setInterval(draw, 45);
+        }
+
+        // ============================================================================
+        // 4. PROCESSAMENTO DE DADOS
+        // ============================================================================
+        function detectAccountType(player) {
+            if (player.uuid.startsWith('00000000-0000-0000-0009-') || player.name.startsWith('.')) {
+                return {
+                    id: 'bedrock',
+                    label: 'BEDROCK',
+                    fullLabel: 'Bedrock Edition (Geyser / Floodgate Protocol)',
+                    rule: 'UUID prefix 00000000-0000-0000-0009- or nickname starting with ".".'
+                };
+            }
+            if (player.uuid.startsWith('fb070000-')) {
+                return {
+                    id: 'bot',
+                    label: 'BOT/NPC',
+                    fullLabel: 'Bot / FakePlayer / NPC Neural Instance',
+                    rule: 'Reserved UUID prefix fb070000- (Carpet / Citizens / System).'
+                };
+            }
+            return {
+                id: 'java',
+                label: 'JAVA',
+                fullLabel: 'Minecraft Java Edition (Standard Offline/Online Auth)',
+                rule: 'Standard Java Edition UUID node.'
+            };
+        }
+
+        function parseMinecraftDate(dateStr) {
+            const parts = dateStr.split(' ');
+            if (parts.length === 3) {
+                const tz = parts[2].slice(0, 3) + ':' + parts[2].slice(3);
+                return new Date(`${parts[0]}T${parts[1]}${tz}`);
+            }
+            return new Date(dateStr);
+        }
+
+        function formatPtBrDate(dateObj) {
+            return new Intl.DateTimeFormat('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }).format(dateObj);
+        }
+
+        const ENRICHED_PLAYERS = USER_CACHE_DATA.map((raw, index) => {
+            const datPath = `data/${raw.uuid}.dat`;
+            const datOldPath = `data/${raw.uuid}.dat_old`;
+            const hasDat = DATA_FOLDER_FILES.has(datPath);
+            const hasDatOld = DATA_FOLDER_FILES.has(datOldPath);
+            const accountType = detectAccountType(raw);
+            const expiresDate = parseMinecraftDate(raw.expiresOn);
+
+            return {
+                index,
+                raw,
+                uuid: raw.uuid,
+                name: raw.name,
+                expiresOn: raw.expiresOn,
+                expiresTimestamp: expiresDate.getTime(),
+                expiresFormatted: formatPtBrDate(expiresDate),
+                type: accountType.id,
+                typeInfo: accountType,
+                datPath,
+                datOldPath,
+                hasDat,
+                hasDatOld
+            };
+        });
+
+        // ============================================================================
+        // 5. GERADOR DE AVATAR HOLOGRÁFICO
+        // ============================================================================
+        function generatePixelHeadSVG(name, uuid, type) {
+            let hash = 0;
+            const seedStr = name + uuid;
+            for (let i = 0; i < seedStr.length; i++) {
+                hash = seedStr.charCodeAt(i) + ((hash << 5) - hash);
+            }
+
+            const skinTones = ['#06b6d4', '#0ea5e9', '#3b82f6', '#10b981', '#14b8a6', '#6366f1', '#8b5cf6'];
+            const skin = skinTones[Math.abs(hash) % skinTones.length];
+            const glowColor = type === 'bedrock' ? '#3b82f6' : (type === 'bot' ? '#a855f7' : '#06b6d4');
+
+            return `
+                <svg viewBox="0 0 8 8" class="w-full h-full pixelated" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="8" height="8" fill="#090d16"/>
+                    <rect x="1" y="1" width="6" height="6" fill="${skin}" fill-opacity="0.85"/>
+                    <rect x="2" y="3" width="1" height="1" fill="#ffffff"/>
+                    <rect x="5" y="3" width="1" height="1" fill="#ffffff"/>
+                    <rect x="3" y="5" width="2" height="1" fill="#030712"/>
+                    <rect x="0" y="0" width="8" height="8" fill="none" stroke="${glowColor}" stroke-width="0.5"/>
+                </svg>
+            `;
+        }
+
+        function renderAvatarHTML(player, sizeClass = "w-10 h-10") {
+            const cleanNick = player.name.replace(/^\./, '');
+            const svgFallback = generatePixelHeadSVG(player.name, player.uuid, player.type);
+            const canUseApi = player.type === 'java' && /^[a-zA-Z0-9_]{3,16}$/.test(cleanNick);
+
+            if (canUseApi) {
+                const encodedSvg = encodeURIComponent(svgFallback.trim());
+                return `
+                    <div class="${sizeClass} rounded-lg bg-slate-900 border border-cyan-500/40 overflow-hidden shrink-0 relative shadow-neon-cyan">
+                        <img 
+                            src="https://mc-heads.net/avatar/${encodeURIComponent(cleanNick)}/64" 
+                            alt="Avatar ${player.name}"
+                            loading="lazy"
+                            class="w-full h-full object-cover pixelated"
+                            onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,${encodedSvg}';"
+                        />
+                    </div>
+                `;
+            }
+            return `
+                <div class="${sizeClass} rounded-lg bg-slate-900 border border-cyan-500/40 overflow-hidden shrink-0 shadow-neon-cyan">
+                    ${svgFallback}
+                </div>
+            `;
+        }
+
+        // ============================================================================
+        // 6. ESTADO E CONTROLES DA APLICAÇÃO
+        // ============================================================================
+        let state = {
+            searchQuery: '',
+            activeFilter: 'all',
+            sortBy: 'expires-desc',
+            viewMode: window.innerWidth < 768 ? 'grid' : 'table'
+        };
+
+        function initDashboard() {
+            const totalCount = ENRICHED_PLAYERS.length;
+            const bedrockPlayers = ENRICHED_PLAYERS.filter(p => p.type === 'bedrock');
+            const javaPlayers = ENRICHED_PLAYERS.filter(p => p.type === 'java');
+            const botPlayers = ENRICHED_PLAYERS.filter(p => p.type === 'bot');
+            const backupPlayers = ENRICHED_PLAYERS.filter(p => p.hasDatOld);
+            const activeDatPlayers = ENRICHED_PLAYERS.filter(p => p.hasDat);
+
+            document.getElementById('kpi-total').textContent = totalCount;
+            document.getElementById('kpi-bedrock').textContent = bedrockPlayers.length;
+            document.getElementById('kpi-java-bots').textContent = javaPlayers.length + botPlayers.length;
+            document.getElementById('kpi-java-bots-sub').textContent = `${javaPlayers.length} Java • ${botPlayers.length} Bots`;
+            document.getElementById('kpi-backup').textContent = backupPlayers.length;
+            document.getElementById('kpi-dat-count').textContent = `${activeDatPlayers.length} .dat ativos`;
+
+            document.getElementById('count-all').textContent = `(${totalCount})`;
+            document.getElementById('count-java').textContent = `(${javaPlayers.length})`;
+            document.getElementById('count-bedrock').textContent = `(${bedrockPlayers.length})`;
+            document.getElementById('count-bot').textContent = `(${botPlayers.length})`;
+            document.getElementById('count-backup').textContent = `(${backupPlayers.length})`;
+
+            // Event Listeners
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', (e) => {
+                state.searchQuery = e.target.value.trim().toLowerCase();
+                document.getElementById('clear-search').classList.toggle('hidden', state.searchQuery === '');
+                renderPlayers();
+            });
+
+            document.getElementById('sort-select').addEventListener('change', (e) => {
+                state.sortBy = e.target.value;
+                playSciFiSound('click');
+                renderPlayers();
+            });
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.activeFilter = btn.dataset.filter;
+                    updateFilterTabsUI();
+                    playSciFiSound('click');
+                    renderPlayers();
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth < 768 && state.viewMode === 'table') {
+                    applyViewModeVisibility('grid');
+                } else {
+                    applyViewModeVisibility(state.viewMode);
+                }
+            });
+
+            const modal = document.getElementById('player-modal');
+            modal.addEventListener('click', closeModal);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+
+            initMatrixCanvas();
+            applyViewModeVisibility(state.viewMode);
+            renderPlayers();
+            lucide.createIcons();
+        }
+
+        function updateFilterTabsUI() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const isActive = btn.dataset.filter === state.activeFilter;
+                if (isActive) {
+                    btn.className = 'filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-bold transition-all cursor-pointer bg-cyan-500 text-slate-950 shadow-neon-cyan';
+                } else {
+                    btn.className = 'filter-btn cyber-border-sm px-3.5 py-2 text-xs font-mono font-medium transition-all cursor-pointer bg-slate-900 text-cyan-300 hover:bg-slate-800 border border-cyan-500/30';
+                }
+            });
+        }
+
+        function setViewMode(mode) {
+            state.viewMode = mode;
+            playSciFiSound('click');
+            const tableBtn = document.getElementById('view-table-btn');
+            const gridBtn = document.getElementById('view-grid-btn');
+
+            if (mode === 'table') {
+                tableBtn.className = 'p-2 rounded bg-cyan-500/20 text-cyan-300 transition-colors cursor-pointer';
+                gridBtn.className = 'p-2 rounded text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer';
+            } else {
+                gridBtn.className = 'p-2 rounded bg-cyan-500/20 text-cyan-300 transition-colors cursor-pointer';
+                tableBtn.className = 'p-2 rounded text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer';
+            }
+            applyViewModeVisibility(mode);
+        }
+
+        function applyViewModeVisibility(effectiveMode) {
+            const tableContainer = document.getElementById('table-container');
+            const gridContainer = document.getElementById('grid-container');
+            const isEmpty = getFilteredPlayers().length === 0;
+
+            if (isEmpty) {
+                tableContainer.classList.add('hidden');
+                gridContainer.classList.add('hidden');
+                return;
+            }
+
+            if (effectiveMode === 'table') {
+                tableContainer.classList.remove('hidden');
+                gridContainer.classList.add('hidden');
+            } else {
+                tableContainer.classList.add('hidden');
+                gridContainer.classList.remove('hidden');
+            }
+        }
+
+        function getFilteredPlayers() {
+            return ENRICHED_PLAYERS
+                .filter(player => {
+                    if (state.activeFilter === 'java' && player.type !== 'java') return false;
+                    if (state.activeFilter === 'bedrock' && player.type !== 'bedrock') return false;
+                    if (state.activeFilter === 'bot' && player.type !== 'bot') return false;
+                    if (state.activeFilter === 'backup' && !player.hasDatOld) return false;
+
+                    if (state.searchQuery) {
+                        return player.name.toLowerCase().includes(state.searchQuery) ||
+                               player.uuid.toLowerCase().includes(state.searchQuery);
+                    }
+                    return true;
+                })
+                .sort((a, b) => {
+                    switch (state.sortBy) {
+                        case 'expires-desc': return b.expiresTimestamp - a.expiresTimestamp;
+                        case 'expires-asc': return a.expiresTimestamp - b.expiresTimestamp;
+                        case 'name-asc': return a.name.localeCompare(b.name, 'pt-BR');
+                        case 'name-desc': return b.name.localeCompare(a.name, 'pt-BR');
+                        default: return 0;
+                    }
+                });
+        }
+
+        // ============================================================================
+        // 7. RENDERIZAÇÃO DA TABELA E CARDS
+        // ============================================================================
+        function getTypeBadgeHTML(type) {
+            if (type === 'bedrock') {
+                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                    <i data-lucide="smartphone" class="w-3 h-3"></i> BEDROCK
+                </span>`;
+            }
+            if (type === 'bot') {
+                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                    <i data-lucide="bot" class="w-3 h-3"></i> BOT/NPC
+                </span>`;
+            }
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                <i data-lucide="cpu" class="w-3 h-3"></i> JAVA
+            </span>`;
+        }
+
+        function getFormattedNickHTML(player) {
+            if (player.name.startsWith('.')) {
+                const rest = player.name.slice(1);
+                return `<span class="text-blue-400 font-bold">.</span><span class="font-bold text-white">${escapeHTML(rest)}</span>`;
+            }
+            return `<span class="font-bold text-white">${escapeHTML(player.name)}</span>`;
+        }
+
+        function getFilesBadgesHTML(player) {
+            const datBadge = player.hasDat
+                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">.dat</span>`
+                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono text-slate-600 bg-slate-900 border border-slate-800">no .dat</span>`;
+
+            const oldBadge = player.hasDatOld
+                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-300 border border-amber-500/30">.dat_old</span>`
+                : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono text-slate-600 bg-slate-900 border border-slate-800">no backup</span>`;
+
+            return `<div class="flex flex-wrap items-center gap-1.5">${datBadge}${oldBadge}</div>`;
+        }
+
+        function renderPlayers() {
+            const filtered = getFilteredPlayers();
+            const tbody = document.getElementById('players-table-body');
+            const grid = document.getElementById('grid-container');
+            const emptyState = document.getElementById('empty-state');
+
+            document.getElementById('showing-count').textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('table-container').classList.add('hidden');
+                grid.classList.add('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const effectiveMode = window.innerWidth < 768 ? 'grid' : state.viewMode;
+            applyViewModeVisibility(effectiveMode);
+
+            // Render Tabela
+            tbody.innerHTML = filtered.map(player => `
+                <tr onclick="openModal(${player.index})" class="hover:bg-cyan-500/5 transition-colors cursor-pointer group glitch-hover">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            ${renderAvatarHTML(player, 'w-9 h-9')}
+                            <div>
+                                <div class="text-sm group-hover:text-cyan-300 transition-colors">
+                                    ${getFormattedNickHTML(player)}
+                                </div>
+                                <div class="text-[10px] font-mono text-cyan-500/60">
+                                    NODE_ID #${String(player.index + 1).padStart(2, '0')}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap">
+                        ${getTypeBadgeHTML(player.type)}
+                    </td>
+                    <td class="py-3 px-4" onclick="event.stopPropagation()">
+                        <div class="flex items-center gap-2">
+                            <code class="text-xs font-mono text-cyan-300 bg-slate-950 px-2 py-1 rounded border border-cyan-500/20 select-all truncate max-w-[200px]">
+                                ${player.uuid}
+                            </code>
+                            <button 
+                                onclick="copyText('${player.uuid}', this)" 
+                                class="cyber-border-sm p-1.5 bg-slate-900 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition-all cursor-pointer shrink-0"
+                                title="Copiar UUID"
+                            >
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 whitespace-nowrap font-mono text-xs text-slate-300">
+                        <div>${player.expiresFormatted}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        ${getFilesBadgesHTML(player)}
+                    </td>
+                    <td class="py-3 px-4 text-right whitespace-nowrap">
+                        <button onclick="event.stopPropagation(); openModal(${player.index})" class="cyber-border-sm px-3 py-1.5 text-xs font-mono font-bold bg-slate-900 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 transition-colors cursor-pointer">
+                            INSPECT()
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Render Grade Cards
+            grid.innerHTML = filtered.map(player => `
+                <div onclick="openModal(${player.index})" class="cyber-border bg-cyber-card/95 border border-cyan-500/30 hover:border-cyan-400 p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-lg hover:shadow-neon-cyan transition-all cursor-pointer group glitch-hover">
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                ${renderAvatarHTML(player, 'w-11 h-11')}
+                                <div class="min-w-0">
+                                    <div class="text-base truncate group-hover:text-cyan-300 transition-colors">
+                                        ${getFormattedNickHTML(player)}
+                                    </div>
+                                    <div class="mt-1">
+                                        ${getTypeBadgeHTML(player.type)}
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-mono text-cyan-500/60 bg-slate-950 px-2 py-0.5 rounded border border-cyan-500/20">
+                                #${String(player.index + 1).padStart(2, '0')}
+                            </span>
+                        </div>
+
+                        <div class="bg-slate-950 border border-cyan-500/30 rounded p-2 flex items-center justify-between gap-2" onclick="event.stopPropagation()">
+                            <code class="text-[11px] font-mono text-cyan-300 truncate select-all">${player.uuid}</code>
+                            <button 
+                                onclick="copyText('${player.uuid}', this)" 
+                                class="cyber-border-sm p-1 bg-slate-900 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 cursor-pointer shrink-0"
+                            >
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-cyan-500/20 space-y-2.5">
+                        <div class="flex items-center justify-between text-xs font-mono">
+                            <span class="text-slate-400">EXPIRES:</span>
+                            <span class="text-cyan-200">${player.expiresFormatted}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            ${getFilesBadgesHTML(player)}
+                            <span class="text-xs font-mono font-bold text-cyan-400 group-hover:translate-x-1 transition-transform">
+                                ACCESS &rarr;
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // ============================================================================
+        // 8. MODAL DE DETALHES TERMINAL
+        // ============================================================================
+        function openModal(playerIndex) {
+            playSciFiSound('modal');
+            const player = ENRICHED_PLAYERS[playerIndex];
+            if (!player) return;
+
+            document.getElementById('modal-avatar-wrapper').innerHTML = renderAvatarHTML(player, 'w-14 h-14');
+            document.getElementById('modal-player-name').innerHTML = getFormattedNickHTML(player);
+            document.getElementById('modal-type-badge').innerHTML = getTypeBadgeHTML(player.type);
+            document.getElementById('modal-account-desc').textContent = player.typeInfo.fullLabel;
+            document.getElementById('modal-uuid').textContent = player.uuid;
+            document.getElementById('modal-expires-formatted').textContent = player.expiresFormatted;
+            document.getElementById('modal-expires-raw').textContent = player.expiresOn;
+            document.getElementById('modal-detected-type').textContent = player.typeInfo.fullLabel;
+            document.getElementById('modal-detected-rule').textContent = player.typeInfo.rule;
+
+            const filesList = document.getElementById('modal-files-list');
+            filesList.innerHTML = `
+                <div class="flex items-center justify-between gap-3 p-3 rounded bg-slate-950 border ${player.hasDat ? 'border-cyan-500/40 text-cyan-200' : 'border-slate-800 text-slate-500'}">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <i data-lucide="${player.hasDat ? 'file-check-2' : 'file-x-2'}" class="w-4 h-4 ${player.hasDat ? 'text-cyan-400' : 'text-slate-600'} shrink-0"></i>
+                        <code class="text-xs font-mono truncate">${player.datPath}</code>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded shrink-0 ${player.hasDat ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-900 text-slate-500'}">
+                        ${player.hasDat ? 'ACTIVE_DAT' : 'MISSING'}
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between gap-3 p-3 rounded bg-slate-950 border ${player.hasDatOld ? 'border-amber-500/40 text-amber-200' : 'border-slate-800 text-slate-500'}">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <i data-lucide="${player.hasDatOld ? 'history' : 'file-minus'}" class="w-4 h-4 ${player.hasDatOld ? 'text-amber-400' : 'text-slate-600'} shrink-0"></i>
+                        <code class="text-xs font-mono truncate">${player.datOldPath}</code>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded shrink-0 ${player.hasDatOld ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-900 text-slate-500'}">
+                        ${player.hasDatOld ? 'BACKUP_OLD' : 'NO_BACKUP'}
+                    </span>
+                </div>
+            `;
+
+            const prettyJson = JSON.stringify(player.raw, null, 2);
+            document.getElementById('modal-raw-json').textContent = prettyJson;
+
+            document.getElementById('modal-copy-uuid-btn').onclick = () => copyText(player.uuid, null, 'COPY_UUID');
+            document.getElementById('modal-copy-json-btn').onclick = () => copyText(prettyJson, null, 'COPY_JSON');
+
+            const modal = document.getElementById('player-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            playSciFiSound('click');
+            const modal = document.getElementById('player-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        // ============================================================================
+        // 9. UTILITÁRIOS (CLIPBOARD E TOAST SCI-FI)
+        // ============================================================================
+        function copyText(text, btnElement = null) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                playSciFiSound('click');
+
+                if (btnElement) {
+                    const prevHTML = btnElement.innerHTML;
+                    btnElement.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-cyan-400"></i>`;
+                    lucide.createIcons();
+                    setTimeout(() => {
+                        btnElement.innerHTML = prevHTML;
+                        lucide.createIcons();
+                    }, 1800);
+                }
+
+                showToast('[SUCCESS]: Copiado para o buffer neural!');
+            } catch (err) {
+                showToast('[ERROR]: Falha ao copiar dados.', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const borderClass = type === 'error' ? 'border-pink-500/50 text-pink-200 shadow-neon-pink' : 'border-cyan-500/50 text-cyan-200 shadow-neon-cyan';
+            const iconName = type === 'error' ? 'alert-triangle' : 'terminal';
+
+            toast.className = `cyber-border-sm pointer-events-auto flex items-center gap-2.5 px-4 py-3 bg-slate-950 border ${borderClass} text-xs font-mono font-bold backdrop-blur-md transition-all transform translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4 text-cyan-400 shrink-0"></i>
+                <span>${escapeHTML(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2400);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search-input');
+            input.value = '';
+            state.searchQuery = '';
+            document.getElementById('clear-search').classList.add('hidden');
+            playSciFiSound('click');
+            renderPlayers();
+        }
+
+        function resetFilters() {
+            clearSearch();
+            state.activeFilter = 'all';
+            state.sortBy = 'expires-desc';
+            document.getElementById('sort-select').value = 'expires-desc';
+            updateFilterTabsUI();
+            playSciFiSound('click');
+            renderPlayers();
+        }
+
+        function exportFilteredJSON() {
+            playSciFiSound('modal');
+            const filtered = getFilteredPlayers().map(p => p.raw);
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(filtered, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `neural_cache_filtered_${filtered.length}_nodes.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast(`[EXPORT]: Gerado arquivo JSON com ${filtered.length} nós.`);
+        }
+
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
 </body>
 </html>
+```
+eof
