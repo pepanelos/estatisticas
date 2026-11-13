@@ -2,77 +2,856 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Drakoria — Central de Estatísticas</title>
+<title>DRACO // Central de Telemetria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0c1017;--panel:#151d29;--panel2:#1b2635;--line:#29384b;--text:#edf2f8;--muted:#9eacbd;--gold:#e3b85b;--cyan:#64c7d5;--green:#73d6a1}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#26384d 0,#0c1017 55%);color:var(--text);font:15px/1.5 system-ui,Segoe UI,Arial,sans-serif}
-header{padding:28px max(20px,calc((100% - 1180px)/2));border-bottom:1px solid var(--line);background:#0c1017c9}
-.brand{display:flex;align-items:center;gap:14px}.crest{width:48px;height:48px;border:1px solid #94773c;border-radius:14px;display:grid;place-items:center;color:var(--gold);font-size:25px;background:#211d16}
-h1{font-size:22px;letter-spacing:2px;margin:0}.sub{color:var(--muted);font-size:13px}
-main{max-width:1180px;margin:26px auto;padding:0 20px 50px}.top{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-h2{font-size:17px;margin:0 0 4px}.hint{color:var(--muted);font-size:13px}
-select,input{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:11px 13px;border-radius:10px;outline:none}
-select{min-width:230px}input{width:100%}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:linear-gradient(145deg,var(--panel),#121923);border:1px solid var(--line);border-radius:15px;padding:17px;min-width:0}
-.k-label{font-size:12px;color:var(--muted)}.k-value{font-size:27px;font-weight:750;margin-top:5px;letter-spacing:-.5px}.k-note{font-size:12px;color:var(--gold);margin-top:2px}
-.two{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:14px}.chart{height:265px;position:relative;margin-top:12px}canvas{width:100%;height:100%}
-.panel-title{display:flex;justify-content:space-between;gap:10px;align-items:center}.tag{font-size:11px;color:var(--gold);border:1px solid #66542e;padding:3px 8px;border-radius:20px}
-.table-wrap{overflow:auto;margin-top:14px}.table{width:100%;border-collapse:collapse;min-width:580px}.table th,.table td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);font-size:13px}.table th{color:var(--muted);font-weight:600}.table tr:last-child td{border:0}.rank{color:var(--gold);font-weight:700;width:35px}
-.notice{margin-top:14px;padding:12px 14px;border-radius:12px;background:#242116;border:1px solid #5a4b29;color:#e7d7ad;font-size:13px}
-footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
-@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}@media(max-width:430px){.grid{grid-template-columns:1fr 1fr}.k-value{font-size:22px}main{padding:0 12px 35px}}
-</style></head>
+:root {
+  --bg: #04070d;
+  --panel: rgba(10, 18, 30, 0.75);
+  --panel2: rgba(15, 27, 44, 0.9);
+  --line: rgba(0, 240, 255, 0.22);
+  --line-bright: rgba(0, 240, 255, 0.65);
+  --text: #e6f4ff;
+  --muted: #6e8ca8;
+  --cyan: #00f0ff;
+  --purple: #b026ff;
+  --amber: #ffaa00;
+  --green: #00ff9d;
+  --glow-cyan: 0 0 18px rgba(0, 240, 255, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.14) 0%, transparent 55%),
+    radial-gradient(circle at 85% 90%, rgba(176, 38, 255, 0.1) 0%, transparent 45%),
+    linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+  animation: gridPan 25s linear infinite;
+  color: var(--text);
+  font-family: 'Rajdhani', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+@keyframes gridPan {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 0 0, 0 0, 36px 36px, 36px 36px; }
+}
+
+/* Scanline sutil + feixe de varredura */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+.scan-beam {
+  position: fixed;
+  top: -10%;
+  left: 0;
+  width: 100%;
+  height: 120px;
+  background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.05), transparent);
+  pointer-events: none;
+  z-index: 998;
+  animation: scanDown 7s linear infinite;
+}
+
+@keyframes scanDown {
+  0% { top: -15%; }
+  100% { top: 110%; }
+}
+
+/* Animações de entrada */
+@keyframes bootSlide {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes rowFade {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes crestFloat {
+  0%, 100% { transform: translateY(0); box-shadow: 0 0 15px rgba(0, 240, 255, 0.35); }
+  50% { transform: translateY(-3px); box-shadow: 0 0 26px rgba(0, 240, 255, 0.65); }
+}
+
+@keyframes radarSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+header {
+  padding: 20px max(20px, calc((100% - 1220px)/2));
+  border-bottom: 1px solid var(--line);
+  background: rgba(4, 7, 13, 0.85);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
+}
+
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.crest {
+  width: 50px;
+  height: 50px;
+  border: 1px solid var(--cyan);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(176, 38, 255, 0.15));
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  display: grid;
+  place-items: center;
+  color: var(--cyan);
+  font-size: 24px;
+  animation: crestFloat 3.5s ease-in-out infinite;
+}
+
+h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 5px;
+  margin: 0;
+  background: linear-gradient(90deg, #ffffff, var(--cyan), #ffffff);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shineText 5s linear infinite;
+}
+
+@keyframes shineText {
+  to { background-position: 200% center; }
+}
+
+.sub {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--cyan);
+  font-size: 11px;
+  letter-spacing: 2px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.sys-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--green);
+  border: 1px solid rgba(0, 255, 157, 0.35);
+  background: rgba(0, 255, 157, 0.08);
+  padding: 6px 14px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 15px rgba(0, 255, 157, 0.12);
+}
+
+.pulse {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--green);
+  animation: blink 1.5s infinite ease-in-out;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.75); }
+}
+
+main {
+  max-width: 1220px;
+  margin: 28px auto;
+  padding: 0 20px 60px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+  animation: bootSlide 0.5s ease-out both;
+}
+
+h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  color: #fff;
+}
+
+.hint {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--cyan);
+  vertical-align: middle;
+  margin-left: 4px;
+  animation: blink 1s step-end infinite;
+}
+
+select {
+  background: var(--panel2);
+  color: var(--cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  border: 1px solid var(--line-bright);
+  padding: 11px 16px;
+  border-radius: 6px;
+  outline: none;
+  min-width: 260px;
+  cursor: pointer;
+  box-shadow: inset 0 0 12px rgba(0, 240, 255, 0.08);
+  transition: all 0.25s ease;
+}
+
+select:hover, select:focus {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  transform: translateY(-1px);
+}
+
+select option {
+  background: #09111e;
+  color: var(--text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.card {
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  padding: 20px;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  animation: bootSlide 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.grid .card:nth-child(1) { animation-delay: 0.06s; }
+.grid .card:nth-child(2) { animation-delay: 0.12s; }
+.grid .card:nth-child(3) { animation-delay: 0.18s; }
+.grid .card:nth-child(4) { animation-delay: 0.24s; }
+
+/* Reflexo holográfico ao passar o mouse */
+.card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.12), transparent);
+  transform: skewX(-25deg);
+  transition: left 0.65s ease;
+  pointer-events: none;
+}
+
+.card:hover::after {
+  left: 160%;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 2px;
+  background: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  transition: width 0.3s ease;
+}
+
+.card:hover::before {
+  width: 90px;
+}
+
+.card:hover {
+  border-color: var(--line-bright);
+  box-shadow: 0 10px 30px rgba(0, 240, 255, 0.14);
+  transform: translateY(-4px);
+}
+
+.k-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+
+.k-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 8px;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(0, 240, 255, 0.35);
+}
+
+.k-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1.25fr .75fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.two .card:nth-child(1) { animation-delay: 0.3s; }
+.two .card:nth-child(2) { animation-delay: 0.38s; }
+
+.chart {
+  height: 275px;
+  position: relative;
+  margin-top: 14px;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.panel-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.12);
+  padding-bottom: 10px;
+}
+
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--cyan);
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  padding: 3px 9px;
+  border-radius: 3px;
+}
+
+.table-card {
+  animation-delay: 0.45s;
+}
+
+.table-wrap {
+  overflow: auto;
+  margin-top: 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.table th, .table td {
+  text-align: left;
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+  font-size: 14px;
+}
+
+.table th {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.table tbody tr {
+  transition: background 0.2s ease, transform 0.2s ease;
+  animation: rowFade 0.4s ease-out both;
+}
+
+.table tbody tr:hover {
+  background: rgba(0, 240, 255, 0.08);
+  transform: translateX(4px);
+}
+
+.table tr:last-child td {
+  border: 0;
+}
+
+.rank {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--cyan);
+  font-weight: 700;
+  width: 45px;
+}
+
+.rank-1 { color: var(--amber); text-shadow: 0 0 10px rgba(255, 170, 0, 0.7); }
+.rank-2 { color: #e2e8f0; text-shadow: 0 0 10px rgba(226, 232, 240, 0.6); }
+.rank-3 { color: #f97316; text-shadow: 0 0 10px rgba(249, 115, 22, 0.6); }
+
+.mono-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+
+.notice {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--purple);
+  background: linear-gradient(90deg, rgba(176, 38, 255, 0.14), rgba(10, 18, 30, 0.6));
+  border-top: 1px solid rgba(176, 38, 255, 0.25);
+  border-right: 1px solid rgba(176, 38, 255, 0.25);
+  border-bottom: 1px solid rgba(176, 38, 255, 0.25);
+  color: #dcd0ff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  animation: bootSlide 0.6s 0.5s ease-out both;
+}
+
+footer {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  padding: 28px;
+  border-top: 1px solid rgba(0, 240, 255, 0.1);
+}
+
+@media(max-width: 860px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+  .two { grid-template-columns: 1fr; }
+}
+
+@media(max-width: 460px) {
+  .grid { grid-template-columns: 1fr; }
+  .k-value { font-size: 24px; }
+  main { padding: 0 12px 35px; }
+}
+</style>
+</head>
 <body>
-<header><div class="brand"><div class="crest">♜</div><div><h1>DRAKORIA</h1><div class="sub">CENTRAL DE ESTATÍSTICAS DO SERVIDOR</div></div></div></header>
+<div class="scan-beam"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="crest">🐉</div>
+      <div>
+        <h1>DRACO</h1>
+        <div class="sub">SISTEMA CENTRAL DE TELEMETRIA // STATS</div>
+      </div>
+    </div>
+    <div class="sys-status">
+      <span class="pulse"></span>
+      <span>DATABANK ONLINE</span>
+    </div>
+  </div>
+</header>
+
 <main>
-<div class="top"><div><h2>Visão geral</h2><div class="hint">Estatísticas carregadas dos arquivos JSON da pasta stats</div></div><select id="playerSelect"><option value="all">Todos os jogadores</option></select></div>
-<section class="grid">
-<div class="card"><div class="k-label">Jogadores com registro</div><div class="k-value" id="players">—</div><div class="k-note">Arquivos encontrados</div></div>
-<div class="card"><div class="k-label">Tempo de jogo somado</div><div class="k-value" id="time">—</div><div class="k-note">Convertido dos ticks do Minecraft</div></div>
-<div class="card"><div class="k-label">Mortes registradas</div><div class="k-value" id="deaths">—</div><div class="k-note">Somatório dos jogadores</div></div>
-<div class="card"><div class="k-label">Blocos minerados</div><div class="k-value" id="mined">—</div><div class="k-note">Somatório das estatísticas</div></div>
-</section>
-<section class="two">
-<div class="card"><div class="panel-title"><h2>Tempo de jogo por jogador</h2><span class="tag">TOP 10</span></div><div class="chart"><canvas id="playChart"></canvas></div></div>
-<div class="card"><div class="panel-title"><h2>Atividades</h2><span class="tag">SELEÇÃO ATUAL</span></div><div class="chart"><canvas id="activityChart"></canvas></div></div>
-</section>
-<section class="card" style="margin-top:14px"><div class="panel-title"><h2>Ranking de jogadores</h2><span class="tag">TEMPO DE JOGO</span></div><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Jogador / UUID</th><th>Tempo jogado</th><th>Mortes</th><th>Mobs derrotados</th><th>Blocos minerados</th></tr></thead><tbody id="ranking"></tbody></table></div></section>
-<div class="notice">⚠️ Os nomes foram associados aos UUIDs encontrados no usercache.json. Jogadores sem correspondência no cache aparecem identificados parcialmente pelo UUID.</div>
-</main><footer>Drakoria • Painel atualizado com stats.zip e usercache.json</footer>
+  <div class="top">
+    <div>
+      <h2>Visão Geral da Rede</h2>
+      <div class="hint">> Métricas extraídas dos registros JSON do servidor Draco<span class="cursor"></span></div>
+    </div>
+    <div class="controls">
+      <select id="playerSelect">
+        <option value="all">[ TODOS OS JOGADORES ]</option>
+      </select>
+    </div>
+  </div>
+
+  <section class="grid">
+    <div class="card">
+      <div class="k-label">Entidades Registradas</div>
+      <div class="k-value" id="players">0</div>
+      <div class="k-note">// Arquivos de perfil</div>
+    </div>
+    <div class="card">
+      <div class="k-label">Tempo de Operação</div>
+      <div class="k-value" id="time">0 h</div>
+      <div class="k-note">// Ticks convertidos</div>
+    </div>
+    <div class="card">
+      <div class="k-label">Baixas Registradas</div>
+      <div class="k-value" id="deaths">0</div>
+      <div class="k-note">// Total de mortes</div>
+    </div>
+    <div class="card">
+      <div class="k-label">Blocos Extraídos</div>
+      <div class="k-value" id="mined">0</div>
+      <div class="k-note">// Mineração acumulada</div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <div class="panel-title">
+        <h2>Tempo de Jogo por Jogador</h2>
+        <span class="tag">TOP 10</span>
+      </div>
+      <div class="chart"><canvas id="playChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="panel-title">
+        <h2>Distribuição de Ações</h2>
+        <span class="tag">TELEMETRIA</span>
+      </div>
+      <div class="chart"><canvas id="activityChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="card table-card" style="margin-top:16px">
+    <div class="panel-title">
+      <h2>Matriz de Classificação</h2>
+      <span class="tag">ORDENADO POR TEMPO</span>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>POS</th>
+            <th>Jogador / UUID</th>
+            <th>Tempo Jogado</th>
+            <th>Mortes</th>
+            <th>Mobs Abatidos</th>
+            <th>Blocos Minerados</th>
+          </tr>
+        </thead>
+        <tbody id="ranking"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="notice">
+    [SYS_LOG] :: Identificadores vinculados via usercache.json. Perfis sem correspondência direta exibem fragmento hexadecimal do UUID.
+  </div>
+</main>
+
+<footer>DRACO NETWORK // PAINEL DE TELEMETRIA SINCRONIZADO COM STATS.ZIP & USERCACHE.JSON</footer>
+
 <script>
 const players = [{"uuid":"00000000-0000-0000-0009-01f38faa769e","name":".steve4stronauta","playTicks":32575,"deaths":5,"mobKills":0,"playerKills":0,"jumps":181,"walkCm":97888,"sprintCm":111509,"distanceFlownCm":9050,"mined":1,"crafted":0,"used":0,"pickedUp":5,"dropped":4,"killed":0,"killedBy":3},{"uuid":"27985ad9-8a5a-3acc-a08c-bd80adaf5fa6","name":"o_retrocido","playTicks":459,"deaths":0,"mobKills":0,"playerKills":0,"jumps":3,"walkCm":1290,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f64694e609","name":".Lorenzzfx","playTicks":43843,"deaths":2,"mobKills":0,"playerKills":0,"jumps":420,"walkCm":49653,"sprintCm":52144,"distanceFlownCm":95427,"mined":237,"crafted":53,"used":215,"pickedUp":403,"dropped":1,"killed":0,"killedBy":1},{"uuid":"fb070000-0000-0001-a17f-6cdef54bb877","name":"7","playTicks":8755,"deaths":0,"mobKills":0,"playerKills":0,"jumps":33,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-2b7a-dfe5057604cd","name":"2","playTicks":9318,"deaths":0,"mobKills":0,"playerKills":0,"jumps":28,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0000-0000-000000000001","name":"bot","playTicks":11721,"deaths":0,"mobKills":0,"playerKills":0,"jumps":9,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":17,"crafted":0,"used":0,"pickedUp":5,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f7d90d91d4","name":".Nightfaall3696","playTicks":2761,"deaths":1,"mobKills":0,"playerKills":0,"jumps":37,"walkCm":11235,"sprintCm":7834,"distanceFlownCm":2146,"mined":1,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":1},{"uuid":"a54fbc42-f6ae-3d1e-ae47-a07d24b00647","name":"steveastronuta","playTicks":2209,"deaths":0,"mobKills":0,"playerKills":0,"jumps":9,"walkCm":2348,"sprintCm":769,"distanceFlownCm":2413,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-075c-0fda97adc93c","name":"Cj","playTicks":328175,"deaths":0,"mobKills":0,"playerKills":0,"jumps":96,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":89,"crafted":0,"used":92,"pickedUp":36,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01ffb92cd0f2","name":".ALAN7SSA","playTicks":13833,"deaths":1,"mobKills":0,"playerKills":0,"jumps":138,"walkCm":35063,"sprintCm":43211,"distanceFlownCm":28772,"mined":0,"crafted":0,"used":14,"pickedUp":68,"dropped":0,"killed":0,"killedBy":0},{"uuid":"230afb84-faff-3db3-b139-8d8f95be5548","name":"o_retorcido","playTicks":50909,"deaths":0,"mobKills":4,"playerKills":0,"jumps":58,"walkCm":98125,"sprintCm":8152,"distanceFlownCm":98609,"mined":1,"crafted":0,"used":70,"pickedUp":2,"dropped":3,"killed":2,"killedBy":0},{"uuid":"ac2a035e-e48d-39d0-bf24-222bbe90d8c2","name":"Al3xOFC_","playTicks":5462,"deaths":0,"mobKills":0,"playerKills":0,"jumps":4,"walkCm":20942,"sprintCm":0,"distanceFlownCm":0,"mined":15,"crafted":0,"used":1,"pickedUp":16,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-8b94-b607ecc9aca1","name":"Miner","playTicks":31469,"deaths":2,"mobKills":0,"playerKills":0,"jumps":2,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":7,"crafted":0,"used":7,"pickedUp":11,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f887933038","name":".bigjonhbr5592","playTicks":14554,"deaths":1,"mobKills":7,"playerKills":0,"jumps":155,"walkCm":53703,"sprintCm":24217,"distanceFlownCm":23236,"mined":55,"crafted":61,"used":59,"pickedUp":71,"dropped":2,"killed":7,"killedBy":1},{"uuid":"fb070000-0000-0001-b3cd-cdf5f4f44682","name":"6","playTicks":8831,"deaths":0,"mobKills":0,"playerKills":0,"jumps":30,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"53909932-f794-33c0-9329-948045a4c1ce","name":"steve","playTicks":2277,"deaths":0,"mobKills":0,"playerKills":0,"jumps":6,"walkCm":1888,"sprintCm":3794,"distanceFlownCm":2044,"mined":0,"crafted":0,"used":1,"pickedUp":0,"dropped":1,"killed":0,"killedBy":0},{"uuid":"38b1bdba-14bc-3d40-985e-f26498f74463","name":"retorcido","playTicks":10993,"deaths":0,"mobKills":0,"playerKills":0,"jumps":6,"walkCm":62302,"sprintCm":0,"distanceFlownCm":0,"mined":216,"crafted":0,"used":215,"pickedUp":779,"dropped":1,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-97e1-15b900b05b14","name":"4","playTicks":8982,"deaths":0,"mobKills":0,"playerKills":0,"jumps":39,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01fb17651f51","name":".DANIZIN_FF1689","playTicks":105624,"deaths":3,"mobKills":6,"playerKills":0,"jumps":816,"walkCm":472356,"sprintCm":73887,"distanceFlownCm":78197,"mined":526,"crafted":1102,"used":920,"pickedUp":1745,"dropped":62,"killed":6,"killedBy":2},{"uuid":"8048391c-2888-302b-99c5-2efaee98b91c","name":"o-retrocido","playTicks":127,"deaths":0,"mobKills":0,"playerKills":0,"jumps":0,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f334718cd3","name":".Al3x8505","playTicks":83744,"deaths":0,"mobKills":18,"playerKills":0,"jumps":1110,"walkCm":255405,"sprintCm":212384,"distanceFlownCm":93888,"mined":1469,"crafted":640,"used":1556,"pickedUp":1797,"dropped":14,"killed":18,"killedBy":0},{"uuid":"fb070000-0000-0001-b3c5-63efc6562aa6","name":"3","playTicks":9150,"deaths":0,"mobKills":0,"playerKills":0,"jumps":26,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-b703-8eef116af06a","name":"1","playTicks":9374,"deaths":0,"mobKills":0,"playerKills":0,"jumps":25,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"9760317b-da1e-3752-8d16-73beff204bce","name":"simas","playTicks":6602,"deaths":0,"mobKills":0,"playerKills":0,"jumps":45,"walkCm":10645,"sprintCm":12573,"distanceFlownCm":13265,"mined":4,"crafted":0,"used":3,"pickedUp":17,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f9a44b4ae3","name":".Omlhr201","playTicks":66424,"deaths":3,"mobKills":12,"playerKills":0,"jumps":968,"walkCm":249578,"sprintCm":105047,"distanceFlownCm":47963,"mined":291,"crafted":237,"used":540,"pickedUp":842,"dropped":207,"killed":12,"killedBy":2},{"uuid":"00000000-0000-0000-0009-01fdeec5dc05","name":".nick92679","playTicks":95700,"deaths":0,"mobKills":1,"playerKills":0,"jumps":571,"walkCm":194723,"sprintCm":94588,"distanceFlownCm":79529,"mined":182,"crafted":53,"used":219,"pickedUp":539,"dropped":2,"killed":1,"killedBy":0},{"uuid":"699b40e1-1e30-3081-8932-92a2b31165a3","name":"wand_ofc","playTicks":1731,"deaths":0,"mobKills":0,"playerKills":0,"jumps":37,"walkCm":4661,"sprintCm":7043,"distanceFlownCm":11114,"mined":1,"crafted":0,"used":1,"pickedUp":1,"dropped":0,"killed":0,"killedBy":0},{"uuid":"fb070000-0000-0001-9670-2dff448e4b72","name":"5","playTicks":8938,"deaths":0,"mobKills":0,"playerKills":0,"jumps":31,"walkCm":0,"sprintCm":0,"distanceFlownCm":0,"mined":0,"crafted":0,"used":0,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"86553936-296a-3693-9096-6146a42a3260","name":"TuguinZx","playTicks":43290,"deaths":1,"mobKills":12,"playerKills":0,"jumps":828,"walkCm":64353,"sprintCm":105040,"distanceFlownCm":158311,"mined":169,"crafted":209,"used":239,"pickedUp":327,"dropped":34,"killed":12,"killedBy":1},{"uuid":"00000000-0000-0000-0009-01f4a9a884f5","name":".DUDA3019","playTicks":102280,"deaths":2,"mobKills":2,"playerKills":0,"jumps":373,"walkCm":376419,"sprintCm":12394,"distanceFlownCm":7753,"mined":30,"crafted":62,"used":54,"pickedUp":105,"dropped":5,"killed":2,"killedBy":2},{"uuid":"00000000-0000-0000-0009-01f542126d88","name":".igorpereiral","playTicks":13780,"deaths":0,"mobKills":2,"playerKills":0,"jumps":336,"walkCm":22739,"sprintCm":53926,"distanceFlownCm":81655,"mined":42,"crafted":31,"used":50,"pickedUp":67,"dropped":7,"killed":2,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01ffc5ed9b62","name":".NESCAUPLAYS7882","playTicks":55402,"deaths":3,"mobKills":0,"playerKills":0,"jumps":342,"walkCm":135896,"sprintCm":118846,"distanceFlownCm":16611,"mined":281,"crafted":119,"used":400,"pickedUp":397,"dropped":0,"killed":0,"killedBy":3},{"uuid":"5e884b9f-a90c-36a3-b7ae-5a3ff2daa1e2","name":"Paulophale","playTicks":2986,"deaths":0,"mobKills":0,"playerKills":0,"jumps":24,"walkCm":3697,"sprintCm":4324,"distanceFlownCm":5100,"mined":0,"crafted":0,"used":104,"pickedUp":0,"dropped":0,"killed":0,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f563c5de2f","name":".chawanp","playTicks":119051,"deaths":8,"mobKills":7,"playerKills":0,"jumps":1190,"walkCm":264219,"sprintCm":249940,"distanceFlownCm":174680,"mined":494,"crafted":1485,"used":726,"pickedUp":4832,"dropped":487,"killed":6,"killedBy":6},{"uuid":"f0739202-c548-3c71-b774-00ab67a627fd","name":"Al3xOFC","playTicks":191805,"deaths":3,"mobKills":7,"playerKills":0,"jumps":423,"walkCm":306756,"sprintCm":118102,"distanceFlownCm":23344,"mined":2670,"crafted":295,"used":3219,"pickedUp":3226,"dropped":10,"killed":7,"killedBy":3},{"uuid":"28cbb7d1-320d-3538-8861-e24e5f2b8c0f","name":"neymar12344566y6","playTicks":217208,"deaths":15,"mobKills":5,"playerKills":0,"jumps":2431,"walkCm":375576,"sprintCm":357987,"distanceFlownCm":386113,"mined":1628,"crafted":709,"used":2536,"pickedUp":5333,"dropped":179,"killed":5,"killedBy":9},{"uuid":"00284902-b05d-3c82-9633-10c2d454646b","name":"felipeoficial_br","playTicks":129231,"deaths":0,"mobKills":23,"playerKills":0,"jumps":1850,"walkCm":231524,"sprintCm":305535,"distanceFlownCm":281584,"mined":1125,"crafted":330,"used":1666,"pickedUp":1666,"dropped":481,"killed":21,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01f3bbce64ec","name":".HeadyPlace1920","playTicks":427947,"deaths":1,"mobKills":75,"playerKills":0,"jumps":3769,"walkCm":729720,"sprintCm":943081,"distanceFlownCm":689712,"mined":1884,"crafted":1226,"used":3431,"pickedUp":2962,"dropped":213,"killed":72,"killedBy":1},{"uuid":"179158f2-d08c-3593-9583-405f051d4382","name":"Kiokinnn","playTicks":129188,"deaths":2,"mobKills":197,"playerKills":0,"jumps":2077,"walkCm":119761,"sprintCm":199466,"distanceFlownCm":598235,"mined":907,"crafted":572,"used":1477,"pickedUp":2461,"dropped":237,"killed":191,"killedBy":2},{"uuid":"0f50d757-82d0-3944-b3d7-fd7f747c313b","name":"7Benjamin","playTicks":214793,"deaths":2,"mobKills":118,"playerKills":3,"jumps":3176,"walkCm":570544,"sprintCm":557157,"distanceFlownCm":589063,"mined":1351,"crafted":488,"used":2039,"pickedUp":3985,"dropped":375,"killed":116,"killedBy":2},{"uuid":"00000000-0000-0000-0009-01fb2958238a","name":".LANLAN7607","playTicks":531905,"deaths":6,"mobKills":9,"playerKills":0,"jumps":4324,"walkCm":1687081,"sprintCm":1220719,"distanceFlownCm":492363,"mined":4544,"crafted":5611,"used":8508,"pickedUp":11851,"dropped":560,"killed":9,"killedBy":6},{"uuid":"00000000-0000-0000-0009-01f17fca85e4","name":".EnzoGabrielSL","playTicks":204541,"deaths":9,"mobKills":37,"playerKills":0,"jumps":3101,"walkCm":694200,"sprintCm":352790,"distanceFlownCm":391401,"mined":1402,"crafted":1572,"used":2955,"pickedUp":2945,"dropped":62,"killed":33,"killedBy":7},{"uuid":"2e3d5796-3ad9-326c-8ec8-a46cbae8879f","name":"Mbzin777","playTicks":352295,"deaths":3,"mobKills":82,"playerKills":0,"jumps":3728,"walkCm":882093,"sprintCm":1133318,"distanceFlownCm":462660,"mined":1752,"crafted":726,"used":2109,"pickedUp":3272,"dropped":376,"killed":82,"killedBy":2},{"uuid":"bfd634f4-ce82-329d-8688-e79544eeb61c","name":"gaatix_","playTicks":270990,"deaths":1,"mobKills":87,"playerKills":0,"jumps":2706,"walkCm":699282,"sprintCm":503237,"distanceFlownCm":483112,"mined":2179,"crafted":1898,"used":3522,"pickedUp":3354,"dropped":430,"killed":85,"killedBy":1},{"uuid":"6ee6a4c7-433e-388b-81cc-0239a3d032bb","name":"Zica8223","playTicks":867220,"deaths":32,"mobKills":190,"playerKills":1,"jumps":12556,"walkCm":2431375,"sprintCm":1694389,"distanceFlownCm":2767084,"mined":5356,"crafted":6499,"used":9722,"pickedUp":23711,"dropped":2440,"killed":164,"killedBy":30},{"uuid":"f6c95915-6c02-338e-b666-b7d90dfb473d","name":"KUPPERCUP","playTicks":445362,"deaths":0,"mobKills":240,"playerKills":0,"jumps":5223,"walkCm":720236,"sprintCm":938380,"distanceFlownCm":1027840,"mined":2743,"crafted":994,"used":4413,"pickedUp":4487,"dropped":365,"killed":240,"killedBy":0},{"uuid":"00000000-0000-0000-0009-01ffde53d0f1","name":".Roboosso146","playTicks":1629411,"deaths":22,"mobKills":113,"playerKills":3,"jumps":10379,"walkCm":4581893,"sprintCm":1669793,"distanceFlownCm":1734588,"mined":2450,"crafted":1544,"used":3987,"pickedUp":4852,"dropped":362,"killed":42,"killedBy":16},{"uuid":"00000000-0000-0000-0009-01fd6a392940","name":".Yuuta279413","playTicks":4078461,"deaths":20,"mobKills":201,"playerKills":0,"jumps":25920,"walkCm":7346345,"sprintCm":4477847,"distanceFlownCm":4728916,"mined":29977,"crafted":23892,"used":44581,"pickedUp":61908,"dropped":2186,"killed":200,"killedBy":10},{"uuid":"00000000-0000-0000-0009-01f07b523540","name":".Legoshi4084","playTicks":3634716,"deaths":11,"mobKills":1300,"playerKills":0,"jumps":17159,"walkCm":2084829,"sprintCm":2898676,"distanceFlownCm":2876071,"mined":5955,"crafted":5599,"used":15234,"pickedUp":15096,"dropped":1746,"killed":1279,"killedBy":5},{"uuid":"00000000-0000-0000-0009-01f13e0e0206","name":".lionnn18","playTicks":6840001,"deaths":36,"mobKills":760,"playerKills":0,"jumps":28038,"walkCm":14081968,"sprintCm":13063857,"distanceFlownCm":2170376,"mined":64349,"crafted":68885,"used":97256,"pickedUp":116673,"dropped":9653,"killed":755,"killedBy":17},{"uuid":"9cd218a8-18b1-35dc-b017-785def1766c9","name":"steveastronauta","playTicks":5579406,"deaths":67,"mobKills":329,"playerKills":0,"jumps":15249,"walkCm":10201984,"sprintCm":4161199,"distanceFlownCm":12500655,"mined":19604,"crafted":9045,"used":39809,"pickedUp":58218,"dropped":2877,"killed":321,"killedBy":35},{"uuid":"7508aec8-939b-3a7a-8cd5-a1c913b5a882","name":"Lkokaki","playTicks":3395098,"deaths":19,"mobKills":7166,"playerKills":2,"jumps":52572,"walkCm":6738121,"sprintCm":6837006,"distanceFlownCm":9992848,"mined":19377,"crafted":47857,"used":36249,"pickedUp":38668,"dropped":11937,"killed":5031,"killedBy":14},{"uuid":"00000000-0000-0000-0009-01fdc5a0b3f2","name":".Driel8135","playTicks":5326452,"deaths":10,"mobKills":614,"playerKills":0,"jumps":71971,"walkCm":10227405,"sprintCm":13181721,"distanceFlownCm":15927789,"mined":27474,"crafted":57514,"used":53978,"pickedUp":50460,"dropped":4043,"killed":605,"killedBy":6}];
-const fmt = n => new Intl.NumberFormat('pt-BR').format(Math.round(n||0));
-const hours = ticks => {let h=ticks/72000; return h>=1?(h.toFixed(1).replace('.',',')+' h'):(Math.round(ticks/1200)+' min')};
-const shortId = u => (players.find(p=>p.uuid===u)?.name || (u.slice(0,8)+'…'));
-const total = (arr,key) => arr.reduce((a,p)=>a+(p[key]||0),0);
-const select=document.getElementById('playerSelect');
-players.sort((a,b)=>b.playTicks-a.playTicks);
-players.forEach(p=>{let o=document.createElement('option');o.value=p.uuid;o.textContent=shortId(p.uuid);select.appendChild(o)});
-function drawBar(canvasId, items, color='#e3b85b'){
- const c=document.getElementById(canvasId),ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;
- c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
- const left=items.some(x=>x.label.length>10)?95:72, right=12, top=10, bottom=8, row=(h-top-bottom)/Math.max(items.length,1), max=Math.max(...items.map(x=>x.value),1);
- ctx.font='11px system-ui';items.forEach((it,i)=>{let y=top+i*row+row*.5;ctx.fillStyle='#aebaca';ctx.textAlign='right';ctx.fillText(it.label.slice(0,14),left-9,y+4);ctx.fillStyle='#273548';ctx.fillRect(left,y-7,w-left-right,14);ctx.fillStyle=color;ctx.fillRect(left,y-7,(w-left-right)*it.value/max,14);ctx.fillStyle='#edf2f8';ctx.textAlign='left';let txt=it.display||fmt(it.value);ctx.fillText(txt,Math.min(left+(w-left-right)*it.value/max+6,w-48),y+4)});
+
+const fmt = n => new Intl.NumberFormat('pt-BR').format(Math.round(n || 0));
+const hours = ticks => {
+  let h = ticks / 72000;
+  return h >= 1 ? (h.toFixed(1).replace('.', ',') + ' h') : (Math.round(ticks / 1200) + ' min');
+};
+const shortId = u => (players.find(p => p.uuid === u)?.name || (u.slice(0, 8) + '…'));
+const total = (arr, key) => arr.reduce((a, p) => a + (p[key] || 0), 0);
+
+const select = document.getElementById('playerSelect');
+players.sort((a, b) => b.playTicks - a.playTicks);
+players.forEach(p => {
+  let o = document.createElement('option');
+  o.value = p.uuid;
+  o.textContent = shortId(p.uuid);
+  select.appendChild(o);
+});
+
+// Contadores animados nos KPIs
+const kpiState = { players: 0, time: 0, deaths: 0, mined: 0 };
+const kpiRaf = {};
+
+function animateValue(id, target, formatter) {
+  if (kpiRaf[id]) cancelAnimationFrame(kpiRaf[id]);
+  const el = document.getElementById(id);
+  const start = kpiState[id] || 0;
+  const duration = 750;
+  const t0 = performance.now();
+
+  function step(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 4);
+    const cur = start + (target - start) * ease;
+    kpiState[id] = cur;
+    el.textContent = formatter(cur);
+    if (p < 1) {
+      kpiRaf[id] = requestAnimationFrame(step);
+    } else {
+      kpiState[id] = target;
+      el.textContent = formatter(target);
+    }
+  }
+  kpiRaf[id] = requestAnimationFrame(step);
 }
-function drawDonut(canvasId,values){
- const c=document.getElementById(canvasId),ctx=c.getContext('2d'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;c.width=w*dpr;c.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
- const colors=['#e3b85b','#64c7d5','#73d6a1','#a78bfa','#ed8b8b'];let sum=values.reduce((a,x)=>a+x.value,0)||1, cx=w*.37,cy=h*.48,r=Math.min(h*.36,w*.28),a=-Math.PI/2;
- values.forEach((v,i)=>{let b=a+v.value/sum*Math.PI*2;ctx.beginPath();ctx.arc(cx,cy,r,a,b);ctx.strokeStyle=colors[i];ctx.lineWidth=22;ctx.stroke();a=b});
- ctx.textAlign='center';ctx.fillStyle='#edf2f8';ctx.font='bold 18px system-ui';ctx.fillText(fmt(sum),cx,cy+5);
- ctx.textAlign='left';ctx.font='12px system-ui';values.forEach((v,i)=>{let y=cy-35+i*25;ctx.fillStyle=colors[i];ctx.fillRect(w*.68,y-8,9,9);ctx.fillStyle='#aebaca';ctx.fillText(v.label,w*.68+15,y);ctx.fillStyle='#edf2f8';ctx.fillText(fmt(v.value),w*.68+15,y+12)});
+
+// Animações dos gráficos em Canvas
+let barRaf = null;
+function drawBarAnimated(canvasId, items) {
+  if (barRaf) cancelAnimationFrame(barRaf);
+  const c = document.getElementById(canvasId),
+        ctx = c.getContext('2d');
+  const duration = 850;
+  const t0 = performance.now();
+
+  function frame(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+
+    const w = c.clientWidth,
+          h = c.clientHeight,
+          dpr = window.devicePixelRatio || 1;
+    c.width = w * dpr;
+    c.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const left = items.some(x => x.label.length > 10) ? 105 : 78,
+          right = 14,
+          top = 10,
+          bottom = 8,
+          row = (h - top - bottom) / Math.max(items.length, 1),
+          max = Math.max(...items.map(x => x.value), 1);
+
+    ctx.font = '11px "JetBrains Mono", monospace';
+    items.forEach((it, i) => {
+      // Escalonamento sutil entre barras
+      const stagger = Math.max(0, Math.min(1, (p * 1.35) - (i * 0.045)));
+      const itemEase = 1 - Math.pow(1 - stagger, 3);
+
+      let y = top + i * row + row * 0.5;
+      
+      ctx.fillStyle = '#8aa8c7';
+      ctx.textAlign = 'right';
+      ctx.fillText(it.label.slice(0, 14), left - 10, y + 4);
+
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.08)';
+      ctx.fillRect(left, y - 6, w - left - right, 12);
+
+      const fullBarW = (w - left - right) * it.value / max;
+      const barW = fullBarW * itemEase;
+
+      if (barW > 0.5) {
+        const grad = ctx.createLinearGradient(left, 0, left + fullBarW, 0);
+        grad.addColorStop(0, '#0077ff');
+        grad.addColorStop(1, '#00f0ff');
+        
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 240, 255, 0.55)';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = grad;
+        ctx.fillRect(left, y - 6, barW, 12);
+
+        // Ponta brilhante da barra
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(left + barW - 2, y - 6, 2, 12);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = '#e6f4ff';
+      ctx.textAlign = 'left';
+      let txt = it.display || fmt(it.value);
+      ctx.fillText(txt, Math.min(left + barW + 8, w - 54), y + 4);
+    });
+
+    if (p < 1) {
+      barRaf = requestAnimationFrame(frame);
+    }
+  }
+  barRaf = requestAnimationFrame(frame);
 }
-function render(){
- const chosen=select.value, selected=chosen==='all'?players:players.filter(p=>p.uuid===chosen),p=selected[0]||players[0],all=chosen==='all';
- document.getElementById('players').textContent=fmt(all?players.length:1);
- document.getElementById('time').textContent=hours(total(selected,'playTicks'));
- document.getElementById('deaths').textContent=fmt(total(selected,'deaths'));
- document.getElementById('mined').textContent=fmt(total(selected,'mined'));
- let top=(all?players: selected).slice(0,10);
- drawBar('playChart',top.map(x=>({label:shortId(x.uuid),value:x.playTicks,display:hours(x.playTicks)})));
- let acts=[['Minerados','mined'],['Criados','crafted'],['Usados','used'],['Coletados','pickedUp'],['Descartados','dropped']].map(([label,key])=>({label,value:total(selected,key)})).filter(x=>x.value>0);
- drawDonut('activityChart',acts.length?acts:[{label:'Sem dados',value:1}]);
- const tbody=document.getElementById('ranking');tbody.innerHTML='';
- (all?players:selected).forEach((x,i)=>{let tr=document.createElement('tr');[String(i+1),shortId(x.uuid),hours(x.playTicks),fmt(x.deaths),fmt(x.mobKills),fmt(x.mined)].forEach((v,j)=>{let td=document.createElement('td');td.textContent=v;if(j===0)td.className='rank';tr.appendChild(td)});tbody.appendChild(tr)});
+
+let donutRaf = null;
+let radarAngle = 0;
+function drawDonutAnimated(canvasId, values) {
+  if (donutRaf) cancelAnimationFrame(donutRaf);
+  const c = document.getElementById(canvasId),
+        ctx = c.getContext('2d');
+  const duration = 900;
+  const t0 = performance.now();
+
+  function frame(now) {
+    const p = Math.min((now - t0) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    radarAngle += 0.015;
+
+    const w = c.clientWidth,
+          h = c.clientHeight,
+          dpr = window.devicePixelRatio || 1;
+    c.width = w * dpr;
+    c.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    const colors = ['#00f0ff', '#b026ff', '#00ff9d', '#ffaa00', '#ff3b6b'];
+    let sum = values.reduce((a, x) => a + x.value, 0) || 1,
+        cx = w * 0.34,
+        cy = h * 0.5,
+        r = Math.min(h * 0.35, w * 0.25),
+        a = -Math.PI / 2;
+
+    // Anel radar externo girando continuamente
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(radarAngle);
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 16, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 6]);
+    ctx.stroke();
+    ctx.restore();
+
+    // Arco animado
+    const totalSweep = Math.PI * 2 * ease;
+    let drawnSweep = 0;
+
+    values.forEach((v, i) => {
+      const slice = (v.value / sum) * Math.PI * 2;
+      const visibleSlice = Math.max(0, Math.min(slice, totalSweep - drawnSweep));
+      if (visibleSlice > 0.001) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, a, a + visibleSlice);
+        ctx.strokeStyle = colors[i % colors.length];
+        ctx.shadowColor = colors[i % colors.length];
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 18;
+        ctx.stroke();
+        ctx.restore();
+      }
+      a += slice;
+      drawnSweep += slice;
+    });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px "Orbitron", sans-serif';
+    ctx.fillText(fmt(sum * ease), cx, cy + 5);
+    ctx.fillStyle = '#6e8ca8';
+    ctx.font = '9px "JetBrains Mono", monospace';
+    ctx.fillText('TOTAL', cx, cy + 18);
+
+    ctx.textAlign = 'left';
+    values.forEach((v, i) => {
+      let y = cy - 42 + i * 26;
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fillRect(w * 0.65, y - 8, 8, 8);
+      ctx.fillStyle = '#8aa8c7';
+      ctx.font = '11px "JetBrains Mono", monospace';
+      ctx.fillText(v.label, w * 0.65 + 14, y);
+      ctx.fillStyle = '#e6f4ff';
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.fillText(fmt(v.value * ease), w * 0.65 + 14, y + 12);
+    });
+
+    // Continua girando suavemente o anel externo
+    donutRaf = requestAnimationFrame(frame);
+  }
+  donutRaf = requestAnimationFrame(frame);
 }
-select.addEventListener('change',render);window.addEventListener('resize',render);render();
-</script></body></html>
+
+function render() {
+  const chosen = select.value,
+        selected = chosen === 'all' ? players : players.filter(p => p.uuid === chosen),
+        all = chosen === 'all';
+
+  animateValue('players', all ? players.length : 1, fmt);
+  animateValue('time', total(selected, 'playTicks'), hours);
+  animateValue('deaths', total(selected, 'deaths'), fmt);
+  animateValue('mined', total(selected, 'mined'), fmt);
+
+  let top = (all ? players : selected).slice(0, 10);
+  drawBarAnimated('playChart', top.map(x => ({ label: shortId(x.uuid), value: x.playTicks, display: hours(x.playTicks) })));
+
+  let acts = [
+    ['Minerados', 'mined'],
+    ['Criados', 'crafted'],
+    ['Usados', 'used'],
+    ['Coletados', 'pickedUp'],
+    ['Descartados', 'dropped']
+  ].map(([label, key]) => ({ label, value: total(selected, key) })).filter(x => x.value > 0);
+  
+  drawDonutAnimated('activityChart', acts.length ? acts : [{ label: 'Sem dados', value: 1 }]);
+
+  const tbody = document.getElementById('ranking');
+  tbody.innerHTML = '';
+  (all ? players : selected).forEach((x, i) => {
+    let tr = document.createElement('tr');
+    tr.style.animationDelay = `${Math.min(i * 0.03, 0.8)}s`;
+    const pos = String(i + 1).padStart(2, '0');
+    const cols = [pos, shortId(x.uuid), hours(x.playTicks), fmt(x.deaths), fmt(x.mobKills), fmt(x.mined)];
+    
+    cols.forEach((v, j) => {
+      let td = document.createElement('td');
+      td.textContent = v;
+      if (j === 0) {
+        td.className = 'rank' + (i < 3 ? ` rank-${i + 1}` : '');
+      } else if (j >= 2) {
+        td.className = 'mono-val';
+      } else {
+        td.style.fontWeight = '600';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+select.addEventListener('change', render);
+window.addEventListener('resize', render);
+render();
+</script>
+</body>
+</html>
